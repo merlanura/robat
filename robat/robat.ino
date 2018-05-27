@@ -39,7 +39,7 @@ enum Mode: int
 int nMode = MANUAL;
 
 // Zustand des Endlichen Automaten
-int nBattleState = 0;
+int nBattleState = 1; // 0
 int nAttackCounter = 0;
 
 unsigned long timeOfLastAction = 0;
@@ -72,8 +72,15 @@ unsigned long timeOfLastAction = 0;
 #define NOTE_A6 880
 #define NOTE_PAUSE 0
 
+#define melody_length 2
+int melody[] = { 262, 440 };
+int duration[] = { 250, 125 };
+
+/*
+#define melody_length 8
 int melody[] = { 262, 196, 196, 220, 196, 0, 247, 262 };
 int duration[] = { 250, 125, 125, 250, 250, 250, 250, 250 };
+*/
 
 /*
 // jurassic park
@@ -101,6 +108,13 @@ int duration[] = {
 // --- END INIT BUZZER ---
 
 
+// --- BEGIN INIT DO_BATTLE ---
+
+// Attack counter
+int nNumberOfAttacks = 0;
+
+// --- END INIT DO_BATTLE ---
+
 // --- BEGIN INIT SERVO ---
 
 #include <Servo.h>
@@ -112,7 +126,7 @@ int duration[] = {
 #define SERVO_2_PIN 13
 #define SERVO_2_MIN 10 // Fine tune your servos min. 0-180
 #define SERVO_2_MAX 170  // Fine tune your servos max. 0-180
-#define DETACH_DELAY 250 // Tune this to let your movement finish before detaching the servo
+#define DETACH_DELAY 200 // Tune this to let your movement finish before detaching the servo
 
 // create servo objects to control the servos
 Servo servo2;
@@ -547,6 +561,17 @@ void moveServoBackForth() {
  */
 void startMotor(int nMotor, int nDir, int nSpeed) {
 
+  if (DEBUG) {
+    Serial.print(millis());
+    Serial.print(", ");
+    Serial.print("Starting motor ");
+    Serial.print(nMotor);
+    Serial.print(", dir: ");
+    Serial.print(nDir);
+    Serial.print(", speed: ");
+    Serial.println(nSpeed);
+  }
+  
   // limit speed to 0 .. MAX_SPEED
   nSpeed = max(0, min(nSpeed, MAX_SPEED));
 
@@ -588,6 +613,14 @@ void startMotor(int nMotor, int nDir, int nSpeed) {
  * @param int nMotor: 0 - motor A, 1 - motor B
  */
 void stopMotor(int nMotor) {
+
+  if (DEBUG) {
+    Serial.print(millis());
+    Serial.print(", ");
+    Serial.print("stopping motor ");
+    Serial.println(nMotor);
+  }
+  
   if (MOTOR_A == nMotor) {
     digitalWrite(in1, LOW);
     digitalWrite(in2, LOW);
@@ -660,13 +693,13 @@ int getDistanceDir(int nAngle) {
  *
  */
 int getDirectionOfNearestObject(int nMaxDistance = 100) {
-  int nMinAngle = 20;
-  int nMaxAngle = 160;
+  int nMinAngle = 30; // 20
+  int nMaxAngle = 150; // 160
   int nNearestObjectAngle = 90; // default
   int nNearestObjectDistance = 999;
   int nDistance = 0;
 
-  for (int nAngle = nMinAngle; nAngle < nMaxAngle; nAngle += 15) {
+  for (int nAngle = nMinAngle; nAngle < nMaxAngle; nAngle += 30) { // 15
     startServo1(nAngle);
     delay(DETACH_DELAY);
     stopServo1();
@@ -688,10 +721,16 @@ void doBattle() {
   int nSpeed = 0;
 
   if (DEBUG) {
-    // Serial.print("Distance to object: ");
-    Serial.println(nDistance);
+    Serial.print("distance to object: ");
+    Serial.print(nDistance);
+    Serial.print(", ");
+    Serial.print("battle state: ");
+    Serial.println(nBattleState);
+    
   }
 
+  // Entfernung auf beiden LEDs anzeigen
+  showDistance(60, nDistance);
   showDistance(90, nDistance);
 
   // set battle state
@@ -736,7 +775,7 @@ void doBattle() {
 
       if (nDistance < 20) {
         // Attacke
-        nAttackCounter++;
+        // nAttackCounter++;
         // TODO: different actions depending on number of attacks
         nBattleState = 1;
       }
@@ -746,11 +785,26 @@ void doBattle() {
       }
       break;
     case 1:
+      nAttackCounter++; // Anzahl durchgeführter Angriffe
+      
       nSpeed = 180; // full speed ahead
       startMotor(MOTOR_A, FORWARD, nSpeed);
       startMotor(MOTOR_B, FORWARD, nSpeed);
       delay(1000);
-      nBattleState = 4; // zurücksetzen
+      
+      stopMotor(MOTOR_A);
+      stopMotor(MOTOR_B);
+
+      
+      if (1 == nAttackCounter) {
+        // beim ersten Angriff nur vorwärts fahren
+        nBattleState = 0; // lauern
+      }
+      else {
+        nBattleState = 4; // rückwärts fahren
+      }
+      
+      //nBattleState = 4; // rückwärts fahren
       break;
     case 2:
       break;
