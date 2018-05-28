@@ -126,7 +126,7 @@ int nNumberOfAttacks = 0;
 #define SERVO_2_PIN 13
 #define SERVO_2_MIN 10 // Fine tune your servos min. 0-180
 #define SERVO_2_MAX 170  // Fine tune your servos max. 0-180
-#define DETACH_DELAY 200 // Tune this to let your movement finish before detaching the servo
+#define DETACH_DELAY 150 // Tune this to let your movement finish before detaching the servo
 
 // create servo objects to control the servos
 Servo servo2;
@@ -254,7 +254,7 @@ int joyposHorz = 512;
  *  @return int nDistanceAvg: average distance
  *
  */
-int getDistance(int nMeasurements = 5) {
+int getDistance(int nMeasurements = 3) {
   int nDistanceAvg = 0;
 
   int nDistance = 0;
@@ -359,26 +359,13 @@ void tweet(int nPin, int nMode = 0) {
 // --- BEGIN FUNCTIONS LED ---
 
 /**
- * Uses the LED ring to show the distance to the nearest object(s).
+ * Show the distance to the nearest object(s) by setting the colors
+ * of LEDs 0 and 1.
  *
- * LED 6 shows the distance at an angle of 60 degrees
- * LED 7 shows the distance at an angle of 90 degrees
- * LED 8 shows the distance at an angle of 130 degrees
- *
- * @param int nAngle angle
  * @param int nDistance distance to object in this direction
  *
  */
-void showDistance(int nAngle, int nDistance) {
-
-    /*
-    if (DEBUG) {
-      Serial.print("angle: ");
-      Serial.println(nAngle);
-      Serial.print("distance: ");
-      Serial.print(nDistance);
-    }
-    */
+void showDistance(int nDistance) {
 
     // color of LED depends on the distance:
     // green: "very far", greater than 50cm
@@ -406,17 +393,13 @@ void showDistance(int nAngle, int nDistance) {
       color = CRGB::Black;
     }
 
-    switch (nAngle) {
-      case 60:
-        leds[0] = color;
-        break;
-      case 90:
-        leds[1] = color;
-        break;
-      case 130:
-        leds[2] = color;
-        break;
-    }
+    // HINT: Diese Funktion ist zeitkritisch. Wenn mehr als 2 LEDs 
+    // (bzw. deren Array-Elemente) gesetzt werden, laufen die Motoren 
+    // nicht mehr. 
+
+    leds[0] = color;
+    leds[1] = color;
+    
     FastLED.show();
 }
 
@@ -540,7 +523,7 @@ void moveServoBackForth() {
     }
 
     // set LEDs to show distance
-    showDistance(actualPositionServo1, nDistance);
+    showDistance(nDistance);
 
 
   }
@@ -729,9 +712,8 @@ void doBattle() {
     
   }
 
-  // Entfernung auf beiden LEDs anzeigen
-  showDistance(60, nDistance);
-  showDistance(90, nDistance);
+  // Entfernung mit LEDs anzeigen
+  showDistance(nDistance);
 
   // set battle state
 
@@ -888,7 +870,7 @@ void avoidObstacles() {
   }
   // timeOfLastDistanceMeasurement = millis();
 
-  showDistance(90, nDistance);
+  showDistance(nDistance);
 
   int nSpeed = 0;
   if (digitalRead(BUMPER_PIN) == LOW) {
