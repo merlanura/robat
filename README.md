@@ -6,6 +6,6 @@ The instructions are for a wheeled robot. You can either control it yourself wit
 
 In contrast to many other robot kits, Robat does not have a specified chassis. On the one hand, this would make it easier to set up, but on the other hand it would limit the possibilities. With a piece of sturdy cardboard and a hot glue gun you can easily build your own chassis.
 
-Please find the RoBat manual in documentation/robat_anleitung_v02.pdf
+Please find the RoBat manual in https://github.com/merlanura/robat/documentation/robat_anleitung_v03.pdf
 
 Have fun!
