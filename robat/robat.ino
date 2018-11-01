@@ -127,6 +127,7 @@ int nNumberOfAttacks = 0;
 #define SERVO_2_MIN 10 // Fine tune your servos min. 0-180
 #define SERVO_2_MAX 170  // Fine tune your servos max. 0-180
 #define DETACH_DELAY 150 // Tune this to let your movement finish before detaching the servo
+#define DETACH_DELAY_SERVO_2 300 // servo 2 moves slowly back and forth
 
 // create servo objects to control the servos
 Servo servo2;
@@ -416,7 +417,10 @@ void startServo2(int targetPos) {
     bAttachedServo2 = true;
 
     // sets the servo position 0-180
-    servo2.write(SERVO_2_MAX + (SERVO_2_MIN - SERVO_2_MAX) / 100 * targetPositionServo2);
+    // servo2.write(SERVO_2_MAX + (SERVO_2_MIN - SERVO_2_MAX) / 100 * targetPositionServo2);
+    int targetPosCorrected = map(targetPositionServo2, 0, 180, SERVO_2_MIN, SERVO_2_MAX);
+    servo2.write(targetPosCorrected);
+        
     // timeOfLastChangeServo2 = millis();
 
     if (DEBUG) {
@@ -476,28 +480,37 @@ void stopServo1() {
    }
 }
 
+
+/**
+ * Move servo 2 back and forth
+ * 
+ */
 void moveServoBackForth() {
   // move servo back and forth
 
   unsigned long timeNow = millis();
 
   // cycle servo through 60, 90 and 130 degrees
-  // initial move
-  if (0 == actualPositionServo1) {
-    startServo1(60);
-    timeOfLastChangeServo1 = timeNow;
+  // 
+  if (0 == actualPositionServo2) {
+    targetPositionServo2 = 60;
+    startServo2(targetPositionServo2);
+    timeOfLastChangeServo2 = timeNow;
   }
-  else if (60 == actualPositionServo1) {
-    startServo1(90);
-    timeOfLastChangeServo1 = timeNow;
+  else if (60 == actualPositionServo2) {
+    targetPositionServo2 = 90;
+    startServo2(targetPositionServo2);
+    timeOfLastChangeServo2 = timeNow;
   }
-  else if (90 == actualPositionServo1) {
-    startServo1(130);
-    timeOfLastChangeServo1 = timeNow;
+  else if (90 == actualPositionServo2) {
+    targetPositionServo2 = 130;
+    startServo2(targetPositionServo2);
+    timeOfLastChangeServo2 = timeNow;
   }
-  else if (130 == actualPositionServo1) {
-    startServo1(60);
-    timeOfLastChangeServo1 = timeNow;
+  else if (130 == actualPositionServo2) {
+    targetPositionServo2 = 60;
+    startServo2(targetPositionServo2);
+    timeOfLastChangeServo2 = timeNow;
   }
 
   // stop servos
@@ -506,26 +519,14 @@ void moveServoBackForth() {
     stopServo2();
   }
   */
-  if (bAttachedServo1 && timeNow - timeOfLastChangeServo1 > DETACH_DELAY) {
+  if (bAttachedServo2 && (timeNow - timeOfLastChangeServo2) > DETACH_DELAY_SERVO_2) {
     if (DEBUG) {
       Serial.print("servo time:");
-      Serial.println(timeNow - timeOfLastChangeServo1);
+      Serial.println(timeNow - timeOfLastChangeServo2);
     }
-    stopServo1();
+    stopServo2();
 
-    // measure distance to next objects in front of the robot
-    int nDistance = ultrasonic.distanceRead(CM);
-    if (DEBUG) {
-      Serial.print("Distance to object, ");
-      Serial.print(actualPositionServo1);
-      Serial.print(" degrees: ");
-      Serial.println(nDistance);
-    }
-
-    // set LEDs to show distance
-    showDistance(nDistance);
-
-
+    actualPositionServo2 = targetPositionServo2;
   }
 }
 
@@ -1107,22 +1108,32 @@ void setup() {
 
   // check servos
   startServo1(90);
+  startServo2(90);
   delay(500);
   stopServo1();
   startServo1(45);
+  stopServo2();
+  startServo2(45);
   delay(500);
   stopServo1();
   startServo1(135);
+  stopServo2();
+  startServo2(135);
   delay(500);
   stopServo1();
+  stopServo2();
 
   delay(500);
   startServo1(90);
+  startServo2(90);
   delay(500);
   stopServo1();
+  stopServo2();
 
   targetPositionServo1 = 90;
   actualPositionServo1 = 90;
+  targetPositionServo2 = 90;
+  actualPositionServo2 = 90;
 
   /*
   startServo2(90);
@@ -1293,8 +1304,8 @@ void setup() {
 
 // --- BEGIN SETUP JOYSTICK ---
 
-  pinMode(joyVert, INPUT);
-  pinMode(joyHorz, INPUT);
+  //pinMode(joyVert, INPUT);
+  //pinMode(joyHorz, INPUT);
 
 // --- END SETUP JOYSTICK ---
 
@@ -1349,7 +1360,7 @@ void loop() {
 // --- END LOOP WS2811 ---
 
 // --- BEGIN LOOP SERVO ---
-  // moveServoBackForth();
+  moveServoBackForth();
 // --- END LOOP SERVO ---
 
 // --- BEGIN LOOP ULTRASONIC ---
