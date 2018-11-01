@@ -1295,7 +1295,20 @@ void setup() {
       break;
     case MANUAL:
     default:
-      leds[1] = CRGB::Blue;
+      // set LED color according to joystick position
+      int nJoyHPos = analogRead(joyHorz);
+      int nJoyColorValue = map(nJoyHPos, 0, 1023, 0, 255);
+      
+      //leds[0] = CRGB::Blue;
+      //leds[1] = CRGB::Blue;
+
+      //Example 1: set color from red, green, and blue components individually
+      leds[0].red = nJoyColorValue;
+      leds[0].green = 255 - nJoyColorValue;
+      leds[0].blue =  150;
+      
+      //Example 2: set color from red, green, and blue components all at once
+      leds[1] = CRGB( nJoyColorValue, 255 - nJoyColorValue, 150);
       FastLED.show();
   }
 
@@ -1303,7 +1316,7 @@ void setup() {
 
 
 // --- BEGIN SETUP JOYSTICK ---
-
+  // don't do this as it somehow disturbs the timer for PWM 
   //pinMode(joyVert, INPUT);
   //pinMode(joyHorz, INPUT);
 
