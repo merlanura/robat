@@ -547,6 +547,46 @@ void moveServoBackForth() {
 // --- BEGIN FUNCTIONS MOTOR ---
 
 /**
+ * Setzt die Drehrichtung der Motoren
+ * 
+ * @param int nMotor: 0 - motor A, 1 - motor B
+ * @param int nDir: 0 - forward, 1 - backward
+ */
+void setMotorDir(int nMotor, int nDir) {
+  if (MOTOR_A == nMotor) {
+    if (FORWARD == nDir) {
+      // motor A forward
+      // Set Motor A forward
+      digitalWrite(in1, HIGH);
+      digitalWrite(in2, LOW);
+    }
+    else {
+      // motor A backward
+      // Set Motor A backward
+      digitalWrite(in1, LOW);
+      digitalWrite(in2, HIGH);
+    }
+    // analogWrite(enA, nSpeed);
+  }
+  else {
+    if (FORWARD == nDir) {
+      // motor B forward
+      // Set Motor B forward
+      digitalWrite(in3, HIGH);
+      digitalWrite(in4, LOW);
+    }
+    else {
+      // motor B backward
+      // Set Motor B backward
+      digitalWrite(in3, LOW);
+      digitalWrite(in4, HIGH);
+    }
+    // analogWrite(enB, nSpeed);
+  }
+}
+  
+
+/**
  * Start motor
  *
  * @param int nMotor: 0 - motor A, 1 - motor B
@@ -570,6 +610,16 @@ void startMotor(int nMotor, int nDir, int nSpeed) {
   // limit speed to 0 .. MAX_SPEED
   nSpeed = max(0, min(nSpeed, MAX_SPEED));
 
+  setMotorDir(nMotor, nDir);
+
+  if (MOTOR_A == nMotor) {
+    analogWrite(enA, nSpeed);
+  }
+  else {
+    analogWrite(enB, nSpeed);
+  } 
+     
+  /*
   if (MOTOR_A == nMotor) {
     if (FORWARD == nDir) {
       // motor A forward
@@ -600,10 +650,12 @@ void startMotor(int nMotor, int nDir, int nSpeed) {
     }
     analogWrite(enB, nSpeed);
   }
+  */
+  
 }
 
 /**
- * Start motor
+ * Stop motor
  *
  * @param int nMotor: 0 - motor A, 1 - motor B
  */
@@ -626,6 +678,63 @@ void stopMotor(int nMotor) {
     digitalWrite(in4, LOW);
     analogWrite(enB, 0); // set high to switch motor off, 0 for short brake
   }
+}
+
+
+/**
+ * Set the motor speeds
+ * 
+ * @param int Richtung Motor A
+ * @param int Geschwindigkeit Motor A
+ * @param int Richtung Motor B
+ * @param int Geschwindigkeit Motor B
+ * 
+ * Die Funktion benutzt die globalen Variablen PrevMotorSpeed1 und PrevMotorSpeed2
+ */
+void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
+  
+  // set motor direction
+  setMotorDir(MOTOR_A, nDirA);
+  setMotorDir(MOTOR_B, nDirB);
+  
+  // Set the motor speeds
+
+  // start motors slowly so they don't draw too much current as the voltage
+  // drop might cause the Arduino to reset
+
+  // MotorSpeed1 and MotorSpeed2 are the target speeds of each motor
+  
+  //analogWrite(enA, MotorSpeed1);
+  //analogWrite(enB, MotorSpeed2);
+
+  // change speed slowly
+  // PrevMotorSpeed1 and PrevMotorSpeed2 represent the previously set speed 
+  // of each motor. This can be less than, equal or greater than the new
+  // motor speed.
+  
+  int nCurMotorSpeed1 = PrevMotorSpeed1;
+  int nCurMotorSpeed2 = PrevMotorSpeed2;
+  while ((nCurMotorSpeed1 != nSpeedA) || (nCurMotorSpeed2 != nSpeedB)) {
+    if (nCurMotorSpeed1 > nSpeedA) {
+      nCurMotorSpeed1--;
+    }
+    if (nCurMotorSpeed1 < nSpeedA) {
+      nCurMotorSpeed1++;
+    }
+    if (nCurMotorSpeed2 > nSpeedB) {
+      nCurMotorSpeed2--;
+    }
+    if (nCurMotorSpeed2 < nSpeedB) {
+      nCurMotorSpeed2++;
+    }
+    analogWrite(enA, nCurMotorSpeed1);
+    analogWrite(enB, nCurMotorSpeed2);
+
+    // wait some time
+    delay(MOTOR_START_DELAY);
+  }
+  PrevMotorSpeed1 = nCurMotorSpeed1;
+  PrevMotorSpeed2 = nCurMotorSpeed2;
 }
 
 
@@ -961,13 +1070,8 @@ void manualControl() {
   joyposVert = analogRead(joyVert);
   joyposHorz = analogRead(joyHorz);
 
-/*
-Serial.print(joyposVert);
-Serial.print(",");
-Serial.println(joyposHorz);
-delay(500);
-*/
-
+  int nMotorDir = FORWARD; // default
+  
   // Determine if this is a forward or backward motion
   // Do this by reading the Verticle Value
   // Apply results to MotorSpeed and to Direction
@@ -976,6 +1080,11 @@ delay(500);
   {
     // This is Backward
 
+    nMotorDir = BACKWARD;
+    //setMotorDir(MOTOR_A, BACKWARD);
+    //setMotorDir(MOTOR_B, BACKWARD);
+
+    /*
     // Set Motor A backward
 
     digitalWrite(in1, LOW);
@@ -985,7 +1094,8 @@ delay(500);
 
     digitalWrite(in3, LOW);
     digitalWrite(in4, HIGH);
-
+    */
+    
     //Determine Motor Speeds
 
     // As we are going backwards we need to reverse readings
@@ -1001,6 +1111,11 @@ delay(500);
   {
     // This is Forward
 
+    nMotorDir = FORWARD;
+    //setMotorDir(MOTOR_A, FORWARD);
+    //setMotorDir(MOTOR_B, FORWARD);
+  
+    /*
     // Set Motor A forward
 
     digitalWrite(in1, HIGH);
@@ -1010,7 +1125,8 @@ delay(500);
 
     digitalWrite(in3, HIGH);
     digitalWrite(in4, LOW);
-
+    */
+    
     //Determine Motor Speeds
 
     MotorSpeed1 = map(joyposVert, 564, 1023, 0, MAX_SPEED);
@@ -1075,8 +1191,8 @@ delay(500);
 
   // Adjust to prevent "buzzing" at very low speed
 
-  if (MotorSpeed1 < 8)MotorSpeed1 = 0;
-  if (MotorSpeed2 < 8)MotorSpeed2 = 0;
+  if (MotorSpeed1 < 8) MotorSpeed1 = 0;
+  if (MotorSpeed2 < 8) MotorSpeed2 = 0;
 
   // Set the motor speeds
 
@@ -1093,6 +1209,10 @@ delay(500);
   // of each motor. This can be less than, equal or greater than the new
   // motor speed.
 
+  // startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB);
+  startMotors(nMotorDir, MotorSpeed1, nMotorDir, MotorSpeed2);
+
+  /*
   int nCurMotorSpeed1 = PrevMotorSpeed1;
   int nCurMotorSpeed2 = PrevMotorSpeed2;
   while ((nCurMotorSpeed1 != MotorSpeed1) || (nCurMotorSpeed2 != MotorSpeed2)) {
@@ -1116,16 +1236,8 @@ delay(500);
   }
   PrevMotorSpeed1 = MotorSpeed1;
   PrevMotorSpeed2 = MotorSpeed2;
+  */
   
-
-  if (true == DEBUG) {
-    /*
-    Serial.print("MotorSpeed1");
-    Serial.println(MotorSpeed1);
-    Serial.print("MotorSpeed2");
-    Serial.println(MotorSpeed2);
-    */
-  }
 }
 
 // --- END FUNCTIONS MANUAL_CONTROL ---
