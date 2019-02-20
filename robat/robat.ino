@@ -210,9 +210,20 @@ int stby = 9; // 6
 int MotorSpeed1 = 0;
 int MotorSpeed2 = 0;
 
+// Previous Motor Speed Values - Start at zero
+int PrevMotorSpeed1 = 0;
+int PrevMotorSpeed2 = 0;
+
 // MAX_SPEED 0..255
 #define MAX_SPEED 196
 
+// Motor start delay prevents the voltage drop when starting
+// the motors.
+// The unit is ms. The actual time for the motors to speed up from
+// zero to MAX_SPEED is MOTOR_START_DELAY * MAX_SPEED ms.
+#define MOTOR_START_DELAY 1
+
+// 
 // motor A / B, aka left / right
 #define MOTOR_A 0
 #define MOTOR_B 1
@@ -1069,8 +1080,43 @@ delay(500);
 
   // Set the motor speeds
 
-  analogWrite(enA, MotorSpeed1);
-  analogWrite(enB, MotorSpeed2);
+  // start motors slowly so they don't draw too much current as the voltage
+  // drop might cause the Arduino to reset
+
+  // MotorSpeed1 and MotorSpeed2 are the target speeds of each motor
+  
+  //analogWrite(enA, MotorSpeed1);
+  //analogWrite(enB, MotorSpeed2);
+
+  // change speed slowly
+  // PrevMotorSpeed1 and PrevMotorSpeed2 represent the previously set speed 
+  // of each motor. This can be less than, equal or greater than the new
+  // motor speed.
+
+  int nCurMotorSpeed1 = PrevMotorSpeed1;
+  int nCurMotorSpeed2 = PrevMotorSpeed2;
+  while ((nCurMotorSpeed1 != MotorSpeed1) || (nCurMotorSpeed2 != MotorSpeed2)) {
+    if (nCurMotorSpeed1 > MotorSpeed1) {
+      nCurMotorSpeed1--;
+    }
+    if (nCurMotorSpeed1 < MotorSpeed1) {
+      nCurMotorSpeed1++;
+    }
+    if (nCurMotorSpeed2 > MotorSpeed2) {
+      nCurMotorSpeed2--;
+    }
+    if (nCurMotorSpeed2 < MotorSpeed2) {
+      nCurMotorSpeed2++;
+    }
+    analogWrite(enA, nCurMotorSpeed1);
+    analogWrite(enB, nCurMotorSpeed2);
+
+    // wait some time
+    delay(MOTOR_START_DELAY);
+  }
+  PrevMotorSpeed1 = MotorSpeed1;
+  PrevMotorSpeed2 = MotorSpeed2;
+  
 
   if (true == DEBUG) {
     /*
@@ -1215,7 +1261,12 @@ void setup() {
 
   int nDistance = getDistance(); // ultrasonic.distanceRead(CM);
 
-  if (nDistance < 10) {
+  int bButtonPressed = digitalRead(BUMPER_PIN);
+  
+  if (LOW == bButtonPressed) {
+    nMode = MANUAL; 
+  }
+  else if (nDistance < 10) {
     nMode = MANUAL;
   }
   else if (nDistance < 30) {
