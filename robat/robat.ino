@@ -747,14 +747,23 @@ void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
  *
  */
 void turnRobot(int nDir, int nDelay) {
+  stopMotor(MOTOR_A);
+  stopMotor(MOTOR_B);
+  delay(100);
   int nSpeed = 128;
   if (LEFT == nDir) {
+    /*
     startMotor(MOTOR_A, FORWARD, nSpeed);
     startMotor(MOTOR_B, BACKWARD, nSpeed);
+    */
+    startMotors(FORWARD, nSpeed, BACKWARD, nSpeed);
   }
   else {
+    /*
     startMotor(MOTOR_A, BACKWARD, nSpeed);
     startMotor(MOTOR_B, FORWARD, nSpeed);
+    */
+    startMotors(BACKWARD, nSpeed, FORWARD, nSpeed);
   }
   delay(nDelay); // TODO: replace by non-blocking control
   stopMotor(MOTOR_A);
@@ -890,9 +899,12 @@ void doBattle() {
     case 1:
       nAttackCounter++; // Anzahl durchgeführter Angriffe
       
-      nSpeed = 180; // full speed ahead
+      nSpeed = MAX_SPEED; // full speed ahead
+      /*
       startMotor(MOTOR_A, FORWARD, nSpeed);
       startMotor(MOTOR_B, FORWARD, nSpeed);
+      */
+      startMotors(FORWARD, nSpeed, FORWARD, nSpeed); 
       delay(1000);
       
       stopMotor(MOTOR_A);
@@ -915,8 +927,11 @@ void doBattle() {
       break;
     case 4:
       nSpeed = 100;
+      /*
       startMotor(MOTOR_A, BACKWARD, nSpeed);
       startMotor(MOTOR_B, BACKWARD, nSpeed);
+      */
+      startMotors(BACKWARD, nSpeed, BACKWARD, nSpeed); 
       delay(800);
       stopMotor(MOTOR_A);
       stopMotor(MOTOR_B);
@@ -925,9 +940,11 @@ void doBattle() {
     case 5:
       // Suchfahrt geradeaus starten
       nSpeed = 80;
+      /*
       startMotor(MOTOR_A, FORWARD, nSpeed);
       startMotor(MOTOR_B, FORWARD, nSpeed);
-
+      */
+      startMotors(FORWARD, nSpeed, FORWARD, nSpeed); 
       // get current time
       timeOfLastAction = millis();
 
@@ -998,8 +1015,11 @@ void avoidObstacles() {
     stopMotor(MOTOR_A);
     stopMotor(MOTOR_B);
     delay(250);
+    /*
     startMotor(MOTOR_A, BACKWARD, 128);
     startMotor(MOTOR_B, BACKWARD, 128);
+    */
+    startMotors(BACKWARD, 128, BACKWARD, 128); 
     delay(750);
     stopMotor(MOTOR_A);
     delay(250);
@@ -1008,8 +1028,11 @@ void avoidObstacles() {
   else if (nDistance > 10) {
     // forward
     nSpeed = map(nDistance, 15, 150, 80, 128);
+    /*
     startMotor(MOTOR_A, FORWARD, nSpeed);
     startMotor(MOTOR_B, FORWARD, nSpeed);
+    */
+    startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
   }
   else {
     stopMotor(MOTOR_A);
