@@ -231,6 +231,7 @@ int PrevMotorSpeed2 = 0;
 // backward / forward
 #define FORWARD 0
 #define BACKWARD 1
+#define STOP 2
 
 // left / right
 #define LEFT 0
@@ -560,7 +561,7 @@ void setMotorDir(int nMotor, int nDir) {
       digitalWrite(in1, HIGH);
       digitalWrite(in2, LOW);
     }
-    else {
+    else if (BACKWARD == nDir) {
       // motor A backward
       // Set Motor A backward
       digitalWrite(in1, LOW);
@@ -575,7 +576,7 @@ void setMotorDir(int nMotor, int nDir) {
       digitalWrite(in3, HIGH);
       digitalWrite(in4, LOW);
     }
-    else {
+    else if (BACKWARD == nDir) {
       // motor B backward
       // Set Motor B backward
       digitalWrite(in3, LOW);
@@ -685,6 +686,27 @@ void stopMotor(int nMotor) {
 
 
 /**
+ * Stop motor
+ *
+ * @param nDir int Richtung, FORWARD | BACKWARD
+ */
+void stopMotors(int nDir) {
+
+  startMotors(nDir, 0, nDir, 0);
+    
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  analogWrite(enA, 0); // set high to switch motor off, 0 for short brake
+
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
+  analogWrite(enB, 0); // set high to switch motor off, 0 for short brake
+
+  PrevMotorSpeed1 = 0;
+  PrevMotorSpeed2 = 0;
+}
+
+/**
  * Set the motor speeds
  * 
  * @param int Richtung Motor A
@@ -756,6 +778,9 @@ void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
     //delay(MOTOR_START_DELAY);
     delay(nDelay);
   }
+
+  delay(20);
+  
   PrevMotorSpeed1 = nCurMotorSpeed1;
   PrevMotorSpeed2 = nCurMotorSpeed2;
 }
@@ -1116,10 +1141,10 @@ void manualControl() {
   joyposVert = analogRead(joyVert);
   joyposHorz = analogRead(joyHorz);
 
-  int nMotorDir = FORWARD; // default
+  int nMotorDir = STOP; // default
   
   // Determine if this is a forward or backward motion
-  // Do this by reading the Verticle Value
+  // Do this by reading the Vertical Value
   // Apply results to MotorSpeed and to Direction
 
   if (joyposVert < 460)
@@ -1239,6 +1264,22 @@ void manualControl() {
 
   if (MotorSpeed1 < 8) MotorSpeed1 = 0;
   if (MotorSpeed2 < 8) MotorSpeed2 = 0;
+
+  // debug
+  if ((MotorSpeed1 == 0) || (MotorSpeed2 == 0)) {
+    leds[0] = CRGB::White;
+    leds[1] = CRGB::White;
+  }
+  else if (FORWARD == nMotorDir) {
+    leds[0] = CRGB::Blue;
+    leds[1] = CRGB::Blue;
+  }
+  else if (BACKWARD == nMotorDir) {
+    leds[0] = CRGB::Green;
+    leds[1] = CRGB::Green;
+  }
+  
+  FastLED.show();
 
   // Set the motor speeds
 
