@@ -678,6 +678,9 @@ void stopMotor(int nMotor) {
     digitalWrite(in4, LOW);
     analogWrite(enB, 0); // set high to switch motor off, 0 for short brake
   }
+
+  PrevMotorSpeed1 = 0;
+  PrevMotorSpeed2 = 0;
 }
 
 
