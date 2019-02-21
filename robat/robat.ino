@@ -215,7 +215,7 @@ int PrevMotorSpeed1 = 0;
 int PrevMotorSpeed2 = 0;
 
 // MAX_SPEED 0..255
-#define MAX_SPEED 196
+#define MAX_SPEED 200
 
 // Motor start delay prevents the voltage drop when starting
 // the motors.
@@ -714,6 +714,25 @@ void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
   // PrevMotorSpeed1 and PrevMotorSpeed2 represent the previously set speed 
   // of each motor. This can be less than, equal or greater than the new
   // motor speed.
+
+  // the delay depends on the difference between previous speed
+  // and target speed.
+
+  int nDelay = 0;
+  int nDiffA = abs(nSpeedA - PrevMotorSpeed1);
+  int nDiffB = abs(nSpeedB - PrevMotorSpeed2);
+  if ((nDiffA > 50) || (nDiffB > 50)) {
+     nDelay = 1;
+  }
+  else if ((nDiffA > 120) || (nDiffB > 120)) {
+     nDelay = 2;
+  }
+  else if ((nDiffA > 180) || (nDiffB > 180)) {
+     nDelay = 3;
+  }
+  else {
+    nDelay = 4;
+  }
   
   int nCurMotorSpeed1 = PrevMotorSpeed1;
   int nCurMotorSpeed2 = PrevMotorSpeed2;
@@ -734,7 +753,8 @@ void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
     analogWrite(enB, nCurMotorSpeed2);
 
     // wait some time
-    delay(MOTOR_START_DELAY);
+    //delay(MOTOR_START_DELAY);
+    delay(nDelay);
   }
   PrevMotorSpeed1 = nCurMotorSpeed1;
   PrevMotorSpeed2 = nCurMotorSpeed2;
