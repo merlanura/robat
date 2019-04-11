@@ -206,12 +206,9 @@ int targetPositionServo2 = 0;
 #define ECHO_PIN     14  // Echo Antwort vom Ultraschallsensor
 #define MAX_DISTANCE 100 // Begrenzung der max. Distanz auf 100cm
 
-
-boolean bMeasureDistance = true;
 unsigned long timeOfLastDistanceMeasurement = millis();
 
-// time between distance measurements
-#define DISTANCE_DELAY 2000
+// Ultrasonic Objekt erzeugen
 
 Ultrasonic ultrasonic(TRIGGER_PIN, ECHO_PIN);
 // ultrasonic.setTimeout(10000UL); // max. 40000UL
@@ -221,26 +218,24 @@ Ultrasonic ultrasonic(TRIGGER_PIN, ECHO_PIN);
 
 // --- BEGIN INIT WS2811 ---
 
-#define FASTLED_ESP8266_RAW_PIN_ORDER
-//#define FASTLED_ESP8266_NODEMCU_PIN_ORDER
-//#define FASTLED_ESP8266_D1_PIN_ORDER
+// Für die Ansteuerung der LEDs (P9812 bzw. WS8212) verwenden wir die 
+// FastLED Library von Daniel Garcia in der Version 3.2.6
+// https://github.com/FastLED/FastLED
 
 #include <FastLED.h>
 
-// number of LEDs in the strip
+// Anzahl der LEDs. RoBat verwendet standardmäßig nur zwei, aber mit 
+// dieser Angabe können bis zu 12 hintereinandergeschaltet werden.
 #define NUM_LEDS 12
 
-// the data pin the green wire from the LEDs are connected to
-#define WS2811_PIN 10
-
-// an array to keep track of the LEDs
+// Array zur Speicherung der Farben aller LEDs
 CRGB leds[NUM_LEDS];
 
-// how many colors to cycle through for the lights
-// #define NUM_COLORS 4
-int num_colors = 24;
+// Die LEDs werden auf der RoBat Platine über Pin 10 angesteuert
+#define WS2811_PIN 10
 
 // --- END INIT WS2811 ---
+
 
 // --- BEGIN INIT MOTOR ---
 
