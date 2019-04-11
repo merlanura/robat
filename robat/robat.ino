@@ -103,8 +103,8 @@ int nAttackCounter = 0;
 // Die Länge der Melodie wird durch melody_length festgelegt.
 
 #define melody_length 2
-int melody[]   = { NOTE_C4, NOTE_A };
-int duration[] = { VIERTEL, ACHTEL };
+int melody[]   = { NOTE_C4, NOTE_A4 };
+int duration[] = { VIERTEL, ACHTEL  };
 
 /*
 
