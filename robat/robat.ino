@@ -239,38 +239,44 @@ CRGB leds[NUM_LEDS];
 
 // --- BEGIN INIT MOTOR ---
 
+// Auf dem Motortreiberboard sind die Eingänge für Motor A mit in1 und in2
+// markiert und die Eingänge für Motor B mit in3 und in4. 
+
 // Motor A
-int enA = 6; // 9
-int in1 = 7;
-int in2 = 8;
+#define MOTOR_A_ENABLE_PIN 6
+#define MOTOR_A_IN1_PIN 7
+#define MOTOR_A_IN2_PIN 8
 
 // Motor B
-int enB = 3;
-int in3 = 5;
-int in4 = 4;
+#define MOTOR_B_ENABLE_PIN 3
+#define MOTOR_B_IN3_PIN 5
+#define MOTOR_B_IN4_PIN 4
 
-int stby = 9; // 6
+#define MOTOR_STANDBY_PIN 9
 
-// Motor Speed Values - Start at zero
-int MotorSpeed1 = 0;
-int MotorSpeed2 = 0;
 
+// Geschwindigkeiten der beiden Motoren 
+int nMotorSpeed1 = 0;
+int nMotorSpeed2 = 0;
+
+// Maximale Geschwindigkeit der beiden Motoren
 // MAX_SPEED 0..255
 #define MAX_SPEED 196
 
-// motor A / B, aka left / right
+// Motor A / B (linker Motor / rechter Motor)
 #define MOTOR_A 0
 #define MOTOR_B 1
 
-// backward / forward
+// Richtungen vorwärts und rückwärts eines Motors
 #define FORWARD 0
 #define BACKWARD 1
 
-// left / right
+// Richtung, in die der Roboter sich dreht
 #define LEFT 0
 #define RIGHT 1
 
 // --- END INIT MOTOR ---
+
 
 // --- BEGIN INIT JOYSTICK ---
 
@@ -608,31 +614,31 @@ void startMotor(int nMotor, int nDir, int nSpeed) {
     if (FORWARD == nDir) {
       // motor A forward
       // Set Motor A forward
-      digitalWrite(in1, HIGH);
-      digitalWrite(in2, LOW);
+      digitalWrite(MOTOR_A_IN1_PIN, HIGH);
+      digitalWrite(MOTOR_A_IN2_PIN, LOW);
     }
     else {
       // motor A backward
       // Set Motor A backward
-      digitalWrite(in1, LOW);
-      digitalWrite(in2, HIGH);
+      digitalWrite(MOTOR_A_IN1_PIN, LOW);
+      digitalWrite(MOTOR_A_IN2_PIN, HIGH);
     }
-    analogWrite(enA, nSpeed);
+    analogWrite(MOTOR_A_ENABLE_PIN, nSpeed);
   }
   else {
     if (FORWARD == nDir) {
       // motor B forward
       // Set Motor B forward
-      digitalWrite(in3, HIGH);
-      digitalWrite(in4, LOW);
+      digitalWrite(MOTOR_B_IN3_PIN, HIGH);
+      digitalWrite(MOTOR_B_IN4_PIN, LOW);
     }
     else {
       // motor B backward
       // Set Motor B backward
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, HIGH);
+      digitalWrite(MOTOR_B_IN3_PIN, LOW);
+      digitalWrite(MOTOR_B_IN4_PIN, HIGH);
     }
-    analogWrite(enB, nSpeed);
+    analogWrite(MOTOR_B_ENABLE_PIN, nSpeed);
   }
 }
 
@@ -651,14 +657,14 @@ void stopMotor(int nMotor) {
   }
   
   if (MOTOR_A == nMotor) {
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, LOW);
-    analogWrite(enA, 0); // set high to switch motor off, 0 for short brake
+    digitalWrite(MOTOR_A_IN1_PIN, LOW);
+    digitalWrite(MOTOR_A_IN2_PIN, LOW);
+    analogWrite(MOTOR_A_ENABLE_PIN, 0); // set high to switch motor off, 0 for short brake
   }
   else {
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, LOW);
-    analogWrite(enB, 0); // set high to switch motor off, 0 for short brake
+    digitalWrite(MOTOR_B_IN3_PIN, LOW);
+    digitalWrite(MOTOR_B_IN4_PIN, LOW);
+    analogWrite(MOTOR_B_ENABLE_PIN, 0); // set high to switch motor off, 0 for short brake
   }
 }
 
@@ -1009,13 +1015,13 @@ delay(500);
 
     // Set Motor A backward
 
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
+    digitalWrite(MOTOR_A_IN1_PIN, LOW);
+    digitalWrite(MOTOR_A_IN2_PIN, HIGH);
 
     // Set Motor B backward
 
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, HIGH);
+    digitalWrite(MOTOR_B_IN3_PIN, LOW);
+    digitalWrite(MOTOR_B_IN4_PIN, HIGH);
 
     //Determine Motor Speeds
 
@@ -1024,8 +1030,8 @@ delay(500);
     joyposVert = joyposVert - 460; // This produces a negative number
     joyposVert = joyposVert * -1;  // Make the number positive
 
-    MotorSpeed1 = map(joyposVert, 0, 460, 0, MAX_SPEED);
-    MotorSpeed2 = map(joyposVert, 0, 460, 0, MAX_SPEED);
+    nMotorSpeed1 = map(joyposVert, 0, 460, 0, MAX_SPEED);
+    nMotorSpeed2 = map(joyposVert, 0, 460, 0, MAX_SPEED);
 
   }
   else if (joyposVert > 564)
@@ -1034,26 +1040,26 @@ delay(500);
 
     // Set Motor A forward
 
-    digitalWrite(in1, HIGH);
-    digitalWrite(in2, LOW);
+    digitalWrite(MOTOR_A_IN1_PIN, HIGH);
+    digitalWrite(MOTOR_A_IN2_PIN, LOW);
 
     // Set Motor B forward
 
-    digitalWrite(in3, HIGH);
-    digitalWrite(in4, LOW);
+    digitalWrite(MOTOR_B_IN3_PIN, HIGH);
+    digitalWrite(MOTOR_B_IN4_PIN, LOW);
 
     //Determine Motor Speeds
 
-    MotorSpeed1 = map(joyposVert, 564, 1023, 0, MAX_SPEED);
-    MotorSpeed2 = map(joyposVert, 564, 1023, 0, MAX_SPEED);
+    nMotorSpeed1 = map(joyposVert, 564, 1023, 0, MAX_SPEED);
+    nMotorSpeed2 = map(joyposVert, 564, 1023, 0, MAX_SPEED);
 
   }
   else
   {
     // This is Stopped
 
-    MotorSpeed1 = 0;
-    MotorSpeed2 = 0;
+    nMotorSpeed1 = 0;
+    nMotorSpeed2 = 0;
 
   }
 
@@ -1075,13 +1081,13 @@ delay(500);
     joyposHorz = map(joyposHorz, 0, 460, 0, MAX_SPEED);
 
 
-    MotorSpeed1 = MotorSpeed1 - joyposHorz;
-    MotorSpeed2 = MotorSpeed2 + joyposHorz;
+    nMotorSpeed1 = nMotorSpeed1 - joyposHorz;
+    nMotorSpeed2 = nMotorSpeed2 + joyposHorz;
 
     // Don't exceed range of 0-255 for motor speeds
 
-    if (MotorSpeed1 < 0)MotorSpeed1 = 0;
-    if (MotorSpeed2 > MAX_SPEED)MotorSpeed2 = MAX_SPEED;
+    if (nMotorSpeed1 < 0)nMotorSpeed1 = 0;
+    if (nMotorSpeed2 > MAX_SPEED)nMotorSpeed2 = MAX_SPEED;
 
   }
   else if (joyposHorz > 564)
@@ -1093,33 +1099,33 @@ delay(500);
     joyposHorz = map(joyposHorz, 564, 1023, 0, MAX_SPEED);
 
 
-    MotorSpeed1 = MotorSpeed1 + joyposHorz;
-    MotorSpeed2 = MotorSpeed2 - joyposHorz;
+    nMotorSpeed1 = nMotorSpeed1 + joyposHorz;
+    nMotorSpeed2 = nMotorSpeed2 - joyposHorz;
 
     // Don't exceed range of 0-255 for motor speeds
 
-    if (MotorSpeed1 > MAX_SPEED)MotorSpeed1 = MAX_SPEED;
-    if (MotorSpeed2 < 0)MotorSpeed2 = 0;
+    if (nMotorSpeed1 > MAX_SPEED)nMotorSpeed1 = MAX_SPEED;
+    if (nMotorSpeed2 < 0)nMotorSpeed2 = 0;
 
   }
 
 
   // Adjust to prevent "buzzing" at very low speed
 
-  if (MotorSpeed1 < 8)MotorSpeed1 = 0;
-  if (MotorSpeed2 < 8)MotorSpeed2 = 0;
+  if (nMotorSpeed1 < 8)nMotorSpeed1 = 0;
+  if (nMotorSpeed2 < 8)nMotorSpeed2 = 0;
 
   // Set the motor speeds
 
-  analogWrite(enA, MotorSpeed1);
-  analogWrite(enB, MotorSpeed2);
+  analogWrite(MOTOR_A_ENABLE_PIN, nMotorSpeed1);
+  analogWrite(MOTOR_B_ENABLE_PIN, nMotorSpeed2);
 
   if (true == DEBUG) {
     /*
-    Serial.print("MotorSpeed1");
-    Serial.println(MotorSpeed1);
-    Serial.print("MotorSpeed2");
-    Serial.println(MotorSpeed2);
+    Serial.print("nMotorSpeed1");
+    Serial.println(nMotorSpeed1);
+    Serial.print("nMotorSpeed2");
+    Serial.println(nMotorSpeed2);
     */
   }
 }
@@ -1226,29 +1232,29 @@ void setup() {
 // --- BEGIN SETUP MOTOR ---
 
   // Set all the motor control pins to outputs
-  pinMode(enA, OUTPUT);
-  pinMode(enB, OUTPUT);
-  pinMode(in1, OUTPUT);
-  pinMode(in2, OUTPUT);
-  pinMode(in3, OUTPUT);
-  pinMode(in4, OUTPUT);
+  pinMode(MOTOR_A_ENABLE_PIN, OUTPUT);
+  pinMode(MOTOR_B_ENABLE_PIN, OUTPUT);
+  pinMode(MOTOR_A_IN1_PIN, OUTPUT);
+  pinMode(MOTOR_A_IN2_PIN, OUTPUT);
+  pinMode(MOTOR_B_IN3_PIN, OUTPUT);
+  pinMode(MOTOR_B_IN4_PIN, OUTPUT);
 
-  pinMode(stby, OUTPUT);
+  pinMode(MOTOR_STANDBY_PIN, OUTPUT);
 
   // enable motor driver
-  digitalWrite(stby, HIGH);
+  digitalWrite(MOTOR_STANDBY_PIN, HIGH);
 
   // Start with motors disabled and direction forward
 
   // Motor A
-  digitalWrite(enA, LOW);
-  digitalWrite(in1, HIGH);
-  digitalWrite(in2, LOW);
+  digitalWrite(MOTOR_A_ENABLE_PIN, LOW);
+  digitalWrite(MOTOR_A_IN1_PIN, HIGH);
+  digitalWrite(MOTOR_A_IN2_PIN, LOW);
 
   // Motor B
-  digitalWrite(enB, LOW);
-  digitalWrite(in3, HIGH);
-  digitalWrite(in4, LOW);
+  digitalWrite(MOTOR_B_ENABLE_PIN, LOW);
+  digitalWrite(MOTOR_B_IN3_PIN, HIGH);
+  digitalWrite(MOTOR_B_IN4_PIN, LOW);
 
 // --- END SETUP MOTOR ---
 
