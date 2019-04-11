@@ -185,11 +185,27 @@ int targetPositionServo2 = 0;
 
 // --- BEGIN INIT ULTRASONIC ---
 
-#define TRIGGER_PIN  15  // Arduino pin tied to trigger pin on the ultrasonic sensor.
-#define ECHO_PIN     14  // Arduino pin tied to echo pin on the ultrasonic sensor.
-#define MAX_DISTANCE 100 // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
+// Zur Entfernungsmessung wird ein Ultraschallsensor HC-SR04 eingesetzt.
+// Der Messbereich liegt theoretisch zwischen 1cm und 400cm, in der Praxis
+// sind Werte bis 200cm realistisch. 
+
+// Wir verwenden die Ultrasonic Library von Erick Simões in der Version 3.0.0
+// https://github.com/ErickSimoes/Ultrasonic
+
+// Hinweis:
+// Beim Compilieren kann es zu einer Fehlermeldung kommen:
+// "as: unrecognized option '-mmcu=avr5'"
+// Der Fehler lässt sich durch Verwendung der Version 1.6.9 des 
+// Boardverwalters umgehen. 
 
 #include <Ultrasonic.h>
+
+// Pins für den Ultraschallsensor HC-SR04
+
+#define TRIGGER_PIN  15  // Trigger Signal an den Ultraschallsensor
+#define ECHO_PIN     14  // Echo Antwort vom Ultraschallsensor
+#define MAX_DISTANCE 100 // Begrenzung der max. Distanz auf 100cm
+
 
 boolean bMeasureDistance = true;
 unsigned long timeOfLastDistanceMeasurement = millis();
