@@ -280,20 +280,15 @@ int nMotorSpeed2 = 0;
 
 // --- BEGIN INIT JOYSTICK ---
 
-// Joystick Input
-int joyVert = A6; // Vertical
-int joyHorz = A7; // Horizontal
+// Die Stellung des Joysticks wird über die Pins A6 und A7 eingelesen.
+#define JOY_VERTICAL_PIN A6
+#define JOY_HORIZONTAL_PIN A7
 
-// Joystick Values - Start at 512 (middle position)
-int joyposVert = 512;
-int joyposHorz = 512;
+// Joystickposition (0..1023). Die Mittelstellung hat den Wert 512.
+int nJoyPosV = 512;
+int nJoyPosH = 512;
 
 // --- END INIT JOYSTICK ---
-
-
-// --- BEGIN INIT OBSTACLE-AVOIDANCE ---
-
-// --- END INIT OBSTACLE-AVOIDANCE ---
 
 
 // --- BEGIN FUNCTIONS ULTRASONIC ---
@@ -995,13 +990,13 @@ void manualControl() {
 
   // Read the Joystick X and Y positions
 
-  joyposVert = analogRead(joyVert);
-  joyposHorz = analogRead(joyHorz);
+  nJoyPosV = analogRead(JOY_VERTICAL_PIN);
+  nJoyPosH = analogRead(JOY_HORIZONTAL_PIN);
 
 /*
-Serial.print(joyposVert);
+Serial.print(nJoyPosV);
 Serial.print(",");
-Serial.println(joyposHorz);
+Serial.println(nJoyPosH);
 delay(500);
 */
 
@@ -1009,7 +1004,7 @@ delay(500);
   // Do this by reading the Verticle Value
   // Apply results to MotorSpeed and to Direction
 
-  if (joyposVert < 460)
+  if (nJoyPosV < 460)
   {
     // This is Backward
 
@@ -1027,14 +1022,14 @@ delay(500);
 
     // As we are going backwards we need to reverse readings
 
-    joyposVert = joyposVert - 460; // This produces a negative number
-    joyposVert = joyposVert * -1;  // Make the number positive
+    nJoyPosV = nJoyPosV - 460; // This produces a negative number
+    nJoyPosV = nJoyPosV * -1;  // Make the number positive
 
-    nMotorSpeed1 = map(joyposVert, 0, 460, 0, MAX_SPEED);
-    nMotorSpeed2 = map(joyposVert, 0, 460, 0, MAX_SPEED);
+    nMotorSpeed1 = map(nJoyPosV, 0, 460, 0, MAX_SPEED);
+    nMotorSpeed2 = map(nJoyPosV, 0, 460, 0, MAX_SPEED);
 
   }
-  else if (joyposVert > 564)
+  else if (nJoyPosV > 564)
   {
     // This is Forward
 
@@ -1050,8 +1045,8 @@ delay(500);
 
     //Determine Motor Speeds
 
-    nMotorSpeed1 = map(joyposVert, 564, 1023, 0, MAX_SPEED);
-    nMotorSpeed2 = map(joyposVert, 564, 1023, 0, MAX_SPEED);
+    nMotorSpeed1 = map(nJoyPosV, 564, 1023, 0, MAX_SPEED);
+    nMotorSpeed2 = map(nJoyPosV, 564, 1023, 0, MAX_SPEED);
 
   }
   else
@@ -1067,22 +1062,22 @@ delay(500);
   // The Horizontal position will "weigh" the motor speed
   // Values for each motor
 
-  if (joyposHorz < 460)
+  if (nJoyPosH < 460)
   {
     // Move Left
 
     // As we are going left we need to reverse readings
 
-    joyposHorz = joyposHorz - 460; // This produces a negative number
-    joyposHorz = joyposHorz * -1;  // Make the number positive
+    nJoyPosH = nJoyPosH - 460; // This produces a negative number
+    nJoyPosH = nJoyPosH * -1;  // Make the number positive
 
     // Map the number to a value of 255 maximum
 
-    joyposHorz = map(joyposHorz, 0, 460, 0, MAX_SPEED);
+    nJoyPosH = map(nJoyPosH, 0, 460, 0, MAX_SPEED);
 
 
-    nMotorSpeed1 = nMotorSpeed1 - joyposHorz;
-    nMotorSpeed2 = nMotorSpeed2 + joyposHorz;
+    nMotorSpeed1 = nMotorSpeed1 - nJoyPosH;
+    nMotorSpeed2 = nMotorSpeed2 + nJoyPosH;
 
     // Don't exceed range of 0-255 for motor speeds
 
@@ -1090,17 +1085,17 @@ delay(500);
     if (nMotorSpeed2 > MAX_SPEED)nMotorSpeed2 = MAX_SPEED;
 
   }
-  else if (joyposHorz > 564)
+  else if (nJoyPosH > 564)
   {
     // Move Right
 
     // Map the number to a value of 255 maximum
 
-    joyposHorz = map(joyposHorz, 564, 1023, 0, MAX_SPEED);
+    nJoyPosH = map(nJoyPosH, 564, 1023, 0, MAX_SPEED);
 
 
-    nMotorSpeed1 = nMotorSpeed1 + joyposHorz;
-    nMotorSpeed2 = nMotorSpeed2 - joyposHorz;
+    nMotorSpeed1 = nMotorSpeed1 + nJoyPosH;
+    nMotorSpeed2 = nMotorSpeed2 - nJoyPosH;
 
     // Don't exceed range of 0-255 for motor speeds
 
@@ -1344,7 +1339,7 @@ void setup() {
     case MANUAL:
     default:
       // set LED color according to joystick position
-      int nJoyHPos = analogRead(joyHorz);
+      int nJoyHPos = analogRead(JOY_HORIZONTAL_PIN);
       int nJoyColorValue = map(nJoyHPos, 0, 1023, 0, 255);
       
       //leds[0] = CRGB::Blue;
