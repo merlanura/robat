@@ -119,25 +119,35 @@ int duration[] = { VIERTEL, ACHTEL,  ACHTEL,  VIERTEL, VIERTEL, VIERTEL,    VIER
 // --- END INIT BUZZER ---
 
 
-// --- BEGIN INIT DO_BATTLE ---
-
-// Attack counter
-int nNumberOfAttacks = 0;
-
-// --- END INIT DO_BATTLE ---
-
 // --- BEGIN INIT SERVO ---
+
+// Die Servo Bibliothek von Michael Margolis ist standardmäßig installiert.
+// Dieser Sketch setzt auf v1.1.3 der Servo Bibliothek auf.
 
 #include <Servo.h>
 
 // servos on A0 (D14) and A1 (D15)
+
+// RoBat verfügt über zwei Servos. Servo 2 wird zum Drehen des 
+// Ultraschallsensors verwendet. Servo 1 ist frei verwendbar.
+
+// Für jeden Servo wird die minimale und maximale Position angegeben.
+// Die minimale Position sollte theoretisch 0, die maximale 180 Grad sein. 
+// In der Praxis werden diese Werte oft nicht erreicht. Sie müssen 
+// individuell bestimmt werden. 
+
 #define SERVO_1_PIN 12
-#define SERVO_1_MIN 25 // Fine tune your servos min. 0-180
-#define SERVO_1_MAX 180  // Fine tune your servos max. 0-180
+#define SERVO_1_MIN 25   // minimale Position 0-180
+#define SERVO_1_MAX 180  // maximale Position 0-180
+
 #define SERVO_2_PIN 13
-#define SERVO_2_MIN 10 // Fine tune your servos min. 0-180
-#define SERVO_2_MAX 170  // Fine tune your servos max. 0-180
-#define DETACH_DELAY 150 // Tune this to let your movement finish before detaching the servo
+#define SERVO_2_MIN 10   // minimale Position 0-180
+#define SERVO_2_MAX 170  // maximale Position 0-180
+
+// Der Servo benötigt eine gewisse Zeit für die Drehung. DETACH_DELAY gibt
+// diese Zeit in ms an.
+
+#define DETACH_DELAY 150 
 #define DETACH_DELAY_SERVO_2 300 // servo 2 moves slowly back and forth
 
 // create servo objects to control the servos
