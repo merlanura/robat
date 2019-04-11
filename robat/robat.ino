@@ -338,8 +338,10 @@ int getDistance(int nMeasurements = 3) {
 // --- BEGIN FUNCTIONS LED ---
 
 /**
- * Show the distance to the nearest object(s) by setting the colors
- * of LEDs 0 and 1.
+ * Zeigt die Entfernung zum nächsten Objekt mit den LEDs 0 und 1 durch
+ * unterschiedliche Farben an.
+ * 
+ * 
  *
  * @param int nDistance distance to object in this direction
  *
