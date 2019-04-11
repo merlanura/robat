@@ -129,45 +129,52 @@ int duration[] = { VIERTEL, ACHTEL,  ACHTEL,  VIERTEL, VIERTEL, VIERTEL,    VIER
 // servos on A0 (D14) and A1 (D15)
 
 // RoBat verfügt über zwei Servos. Servo 2 wird zum Drehen des 
-// Ultraschallsensors verwendet. Servo 1 ist frei verwendbar.
+// Ultraschallsensors verwendet. Servo 1 ist frei verwendbar und wird
+// in diesem Sketch langsam hin- und her bewegt.
 
 // Für jeden Servo wird die minimale und maximale Position angegeben.
 // Die minimale Position sollte theoretisch 0, die maximale 180 Grad sein. 
 // In der Praxis werden diese Werte oft nicht erreicht. Sie müssen 
 // individuell bestimmt werden. 
 
-
-// Servo 1 an Pin 12 ist auf der Platine mit "Servo 2" beschriftet.
-// [x] Servo 2 -> Servo 3 (temp)
-// [x] Servo 1 -> Servo 2
-// [ ] Servo 3 -> Servo 1
+#define SERVO_1_PIN 13
+#define SERVO_1_MIN 10   // minimale Position 0-180
+#define SERVO_1_MAX 170  // maximale Position 0-180
 
 #define SERVO_2_PIN 12
 #define SERVO_2_MIN 25   // minimale Position 0-180
 #define SERVO_2_MAX 180  // maximale Position 0-180
 
-#define SERVO_1_PIN 13
-#define SERVO_1_MIN 10   // minimale Position 0-180
-#define SERVO_1_MAX 170  // maximale Position 0-180
-
 // Der Servo benötigt eine gewisse Zeit für die Drehung. DETACH_DELAY gibt
 // diese Zeit in ms an.
 
-#define DETACH_DELAY 150 
-#define DETACH_DELAY_SERVO_1 300 // servo 2 moves slowly back and forth
+#define DETACH_DELAY_SERVO_1 300 
+#define DETACH_DELAY_SERVO_2 150 
 
-// create servo objects to control the servos
+// Servo Objekte erstellen
+
 Servo servo1;
 Servo servo2;
 
 bool bAttachedServo1 = false;
 bool bAttachedServo2 = false;
 
-// time of last change
+// Das Bewegen eines Servos dauert einige Zeit. Der Programmablauf soll
+// nicht durch das Warten auf das Ende der Bewegung ausgebremst werden.
+// Daher führen wir die Bewegung in kleinen Teilen aus. Wir merken uns 
+// die Systemzeit bei Beginn der Bewegung und jeweils bei der Ausführung
+// einer Teilbewegung. In der Loop prüfen wir, ob der Zeitpunkt für die
+// nächste Bewegung gekommen ist und führen die nächste Teilbewegung 
+// (nur) dann aus.
+
 unsigned long timeOfLastChangeServo1 = 0;
 unsigned long timeOfLastChangeServo2 = 0;
 
-// servo position
+// Für die Bewegung erhält ein Servo eine Zielposition. Während der
+// Teilbewegungen besitzt er jeweils eine aktuelle Position. Durch 
+// Vergleich der beiden kann entschieden werden, ob eine weitere 
+// Bewegung notwendig ist.
+
 int actualPositionServo1 = 0;
 int targetPositionServo1 = 0;
 int actualPositionServo2 = 0;
@@ -685,7 +692,7 @@ void turnRobot(int nDir, int nDelay) {
 int getDistanceDir(int nAngle) {
 
   startServo2(nAngle);
-  delay(DETACH_DELAY);
+  delay(DETACH_DELAY_SERVO_2);
   stopServo2();
   int nDistance = getDistance();
 
@@ -712,7 +719,7 @@ int getDirectionOfNearestObject(int nMaxDistance = 100) {
 
   for (int nAngle = nMinAngle; nAngle < nMaxAngle; nAngle += 30) { // 15
     startServo2(nAngle);
-    delay(DETACH_DELAY);
+    delay(DETACH_DELAY_SERVO_2);
     stopServo2();
     nDistance = getDistance();
 
@@ -768,7 +775,7 @@ void doBattle() {
 
       // turn servo back to 90 degrees
       startServo2(90);
-      delay(DETACH_DELAY);
+      delay(DETACH_DELAY_SERVO_2);
       stopServo2();
 
       if (nAngleOfOpponent < 90) {
@@ -927,7 +934,7 @@ void avoidObstacles() {
 
     // measure distance in different directions and turn to free direction
     startServo2(60);
-    delay(DETACH_DELAY);
+    delay(DETACH_DELAY_SERVO_2);
     stopServo2();
     nDistance = getDistance();
 
@@ -937,7 +944,7 @@ void avoidObstacles() {
     }
     else {
       startServo2(120);
-      delay(DETACH_DELAY);
+      delay(DETACH_DELAY_SERVO_2);
       stopServo2();
       nDistance = getDistance();
 
@@ -954,7 +961,7 @@ void avoidObstacles() {
 
     // set servo to middle position
     startServo2(90);
-    delay(DETACH_DELAY);
+    delay(DETACH_DELAY_SERVO_2);
     stopServo2();
   }
 
