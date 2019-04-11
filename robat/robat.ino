@@ -294,11 +294,15 @@ int nJoyPosH = 512;
 // --- BEGIN FUNCTIONS ULTRASONIC ---
 
 /**
- *  Reads distance from ultrasonic sensor several times and calculates
- *  the average value. Negative distances are ignored.
+ * Ermittelt die Distanz vom Roboter zum nächsten Hindernis mit dem
+ * Ultraschallsensor. 
+ * Die Entfernung wird dabei mehrfach gemessen, um Fehler zu minimieren.
+ * Negative Entfernungen werden ignoriert (Messfehler).
+ * 
+ * Gibt den Durchschnittswert der Messungen zurück.
  *
- *  @param int nMeasurements: number of measurements, default 5
- *  @return int nDistanceAvg: average distance
+ * @param int nMeasurements: Anzahl der Messungen, Default 3
+ * @return int nDistanceAvg: Entfernung zum nächsten Objekt
  *
  */
 int getDistance(int nMeasurements = 3) {
@@ -306,10 +310,15 @@ int getDistance(int nMeasurements = 3) {
 
   int nDistance = 0;
   int nDistanceSum = 0;
-  int nValidValues = 0; // number of positive values
+  int nValidValues = 0; // Anzahl gültiger (positiver) Messwerte
 
-  for (int i=0; i<=nMeasurements; i++) {
-    nDistance = ultrasonic.distanceRead(CM);
+  for (int i = 0; i <= nMeasurements; i++) {
+    nDistance = ultrasonic.read();
+    
+    // Hinweis: in früheren Versionen der Ultrasonic Bibliothek wurde
+    // distanceRead() verwendet:
+    // nDistance = ultrasonic.distanceRead(CM);
+
     if (nDistance > 0) {
       nDistanceSum += nDistance;
       nValidValues++;
