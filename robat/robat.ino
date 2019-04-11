@@ -136,34 +136,40 @@ int duration[] = { VIERTEL, ACHTEL,  ACHTEL,  VIERTEL, VIERTEL, VIERTEL,    VIER
 // In der Praxis werden diese Werte oft nicht erreicht. Sie müssen 
 // individuell bestimmt werden. 
 
+
+// Servo 1 an Pin 12 ist auf der Platine mit "Servo 2" beschriftet.
+// [ ] Servo 2 -> Servo 3 (temp)
+// [ ] Servo 1 -> Servo 2
+// [ ] Servo 3 -> Servo 1
+
 #define SERVO_1_PIN 12
 #define SERVO_1_MIN 25   // minimale Position 0-180
 #define SERVO_1_MAX 180  // maximale Position 0-180
 
-#define SERVO_2_PIN 13
-#define SERVO_2_MIN 10   // minimale Position 0-180
-#define SERVO_2_MAX 170  // maximale Position 0-180
+#define SERVO_3_PIN 13
+#define SERVO_3_MIN 10   // minimale Position 0-180
+#define SERVO_3_MAX 170  // maximale Position 0-180
 
 // Der Servo benötigt eine gewisse Zeit für die Drehung. DETACH_DELAY gibt
 // diese Zeit in ms an.
 
 #define DETACH_DELAY 150 
-#define DETACH_DELAY_SERVO_2 300 // servo 2 moves slowly back and forth
+#define DETACH_DELAY_SERVO_3 300 // servo 2 moves slowly back and forth
 
 // create servo objects to control the servos
-Servo servo2;
+Servo servo3;
 Servo servo1;
 
-bool bAttachedServo2 = false;
+bool bAttachedServo3 = false;
 bool bAttachedServo1 = false;
 
 // time of last change
-unsigned long timeOfLastChangeServo2 = 0;
+unsigned long timeOfLastChangeServo3 = 0;
 unsigned long timeOfLastChangeServo1 = 0;
 
 // servo position
-int actualPositionServo2 = 0;
-int targetPositionServo2 = 0;
+int actualPositionServo3 = 0;
+int targetPositionServo3 = 0;
 int actualPositionServo1 = 0;
 int targetPositionServo1 = 0;
 
@@ -430,28 +436,28 @@ void showDistance(int nDistance) {
 
 // --- BEGIN FUNCTIONS SERVO ---
 
-void startServo2(int targetPos) {
-    targetPositionServo2 = targetPos;
+void startServo3(int targetPos) {
+    targetPositionServo3 = targetPos;
 
     // start servo
-    servo2.attach(SERVO_2_PIN);
-    bAttachedServo2 = true;
+    servo3.attach(SERVO_3_PIN);
+    bAttachedservo3 = true;
 
     // sets the servo position 0-180
-    // servo2.write(SERVO_2_MAX + (SERVO_2_MIN - SERVO_2_MAX) / 100 * targetPositionServo2);
-    int targetPosCorrected = map(targetPositionServo2, 0, 180, SERVO_2_MIN, SERVO_2_MAX);
-    servo2.write(targetPosCorrected);
+    // servo3.write(SERVO_3_MAX + (SERVO_3_MIN - SERVO_3_MAX) / 100 * targetPositionServo3);
+    int targetPosCorrected = map(targetPositionServo3, 0, 180, SERVO_3_MIN, SERVO_3_MAX);
+    servo3.write(targetPosCorrected);
         
-    // timeOfLastChangeServo2 = millis();
+    // timeOfLastChangeservo3 = millis();
 
     if (DEBUG) {
-      Serial.print("actualPositionServo2: ");
-      Serial.println(actualPositionServo2);
-      Serial.print("targetPositionServo2: ");
-      Serial.println(targetPositionServo2);
+      Serial.print("actualPositionServo3: ");
+      Serial.println(actualPositionServo3);
+      Serial.print("targetPositionServo3: ");
+      Serial.println(targetPositionServo3);
     }
 
-    actualPositionServo2 = -1;
+    actualPositionServo3 = -1;
 }
 
 void startServo1(int targetPos) {
@@ -481,10 +487,10 @@ void startServo1(int targetPos) {
     actualPositionServo1 = -1;
 }
 
-void stopServo2() {
-   servo2.detach();
-   bAttachedServo2 = false;
-   actualPositionServo2 = targetPositionServo2;
+void stopservo3() {
+   servo3.detach();
+   bAttachedservo3 = false;
+   actualPositionServo3 = targetPositionServo3;
 
    if (DEBUG) {
      Serial.println("stopping servo 2");
@@ -513,41 +519,41 @@ void moveServoBackForth() {
 
   // cycle servo through 60, 90 and 130 degrees
   // 
-  if (0 == actualPositionServo2) {
-    targetPositionServo2 = 60;
-    startServo2(targetPositionServo2);
-    timeOfLastChangeServo2 = timeNow;
+  if (0 == actualPositionServo3) {
+    targetPositionServo3 = 60;
+    startServo3(targetPositionServo3);
+    timeOfLastChangeservo3 = timeNow;
   }
-  else if (60 == actualPositionServo2) {
-    targetPositionServo2 = 90;
-    startServo2(targetPositionServo2);
-    timeOfLastChangeServo2 = timeNow;
+  else if (60 == actualPositionServo3) {
+    targetPositionServo3 = 90;
+    startServo3(targetPositionServo3);
+    timeOfLastChangeservo3 = timeNow;
   }
-  else if (90 == actualPositionServo2) {
-    targetPositionServo2 = 130;
-    startServo2(targetPositionServo2);
-    timeOfLastChangeServo2 = timeNow;
+  else if (90 == actualPositionServo3) {
+    targetPositionServo3 = 130;
+    startServo3(targetPositionServo3);
+    timeOfLastChangeservo3 = timeNow;
   }
-  else if (130 == actualPositionServo2) {
-    targetPositionServo2 = 60;
-    startServo2(targetPositionServo2);
-    timeOfLastChangeServo2 = timeNow;
+  else if (130 == actualPositionServo3) {
+    targetPositionServo3 = 60;
+    startServo3(targetPositionServo3);
+    timeOfLastChangeservo3 = timeNow;
   }
 
   // stop servos
   /*
-  if (bAttachedServo2 && timeNow - timeOfLastChangeServo2 > DETACH_DELAY) {
-    stopServo2();
+  if (bAttachedservo3 && timeNow - timeOfLastChangeservo3 > DETACH_DELAY) {
+    stopservo3();
   }
   */
-  if (bAttachedServo2 && (timeNow - timeOfLastChangeServo2) > DETACH_DELAY_SERVO_2) {
+  if (bAttachedservo3 && (timeNow - timeOfLastChangeservo3) > DETACH_DELAY_SERVO_3) {
     if (DEBUG) {
       Serial.print("servo time:");
-      Serial.println(timeNow - timeOfLastChangeServo2);
+      Serial.println(timeNow - timeOfLastChangeservo3);
     }
-    stopServo2();
+    stopservo3();
 
-    actualPositionServo2 = targetPositionServo2;
+    actualPositionServo3 = targetPositionServo3;
   }
 }
 
@@ -1121,50 +1127,50 @@ void setup() {
 
 
 // --- BEGIN SETUP SERVO ---
-  pinMode(SERVO_2_PIN, OUTPUT);
+  pinMode(SERVO_3_PIN, OUTPUT);
   pinMode(SERVO_1_PIN, OUTPUT);
 
   // check servos
   startServo1(90);
-  startServo2(90);
+  startServo3(90);
   delay(500);
   stopServo1();
   startServo1(45);
-  stopServo2();
-  startServo2(45);
+  stopservo3();
+  startServo3(45);
   delay(500);
   stopServo1();
   startServo1(135);
-  stopServo2();
-  startServo2(135);
+  stopservo3();
+  startServo3(135);
   delay(500);
   stopServo1();
-  stopServo2();
+  stopservo3();
 
   delay(500);
   startServo1(90);
-  startServo2(90);
+  startServo3(90);
   delay(500);
   stopServo1();
-  stopServo2();
+  stopservo3();
 
   targetPositionServo1 = 90;
   actualPositionServo1 = 90;
-  targetPositionServo2 = 90;
-  actualPositionServo2 = 90;
+  targetPositionServo3 = 90;
+  actualPositionServo3 = 90;
 
   /*
-  startServo2(90);
+  startServo3(90);
   delay(500);
-  stopServo2();
-  startServo2(45);
+  stopservo3();
+  startServo3(45);
   delay(500);
-  stopServo2();
-  startServo2(135);
+  stopservo3();
+  startServo3(135);
   delay(500);
-  stopServo2();
-  targetPositionServo2 = 0;
-  actualPositionServo2 = 0;
+  stopservo3();
+  targetPositionServo3 = 0;
+  actualPositionServo3 = 0;
   */
 
   /*
