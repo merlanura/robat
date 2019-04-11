@@ -138,13 +138,13 @@ int duration[] = { VIERTEL, ACHTEL,  ACHTEL,  VIERTEL, VIERTEL, VIERTEL,    VIER
 
 
 // Servo 1 an Pin 12 ist auf der Platine mit "Servo 2" beschriftet.
-// [ ] Servo 2 -> Servo 3 (temp)
-// [ ] Servo 1 -> Servo 2
+// [x] Servo 2 -> Servo 3 (temp)
+// [x] Servo 1 -> Servo 2
 // [ ] Servo 3 -> Servo 1
 
-#define SERVO_1_PIN 12
-#define SERVO_1_MIN 25   // minimale Position 0-180
-#define SERVO_1_MAX 180  // maximale Position 0-180
+#define SERVO_2_PIN 12
+#define SERVO_2_MIN 25   // minimale Position 0-180
+#define SERVO_2_MAX 180  // maximale Position 0-180
 
 #define SERVO_3_PIN 13
 #define SERVO_3_MIN 10   // minimale Position 0-180
@@ -158,20 +158,20 @@ int duration[] = { VIERTEL, ACHTEL,  ACHTEL,  VIERTEL, VIERTEL, VIERTEL,    VIER
 
 // create servo objects to control the servos
 Servo servo3;
-Servo servo1;
+Servo servo2;
 
 bool bAttachedServo3 = false;
-bool bAttachedServo1 = false;
+bool bAttachedServo2 = false;
 
 // time of last change
 unsigned long timeOfLastChangeServo3 = 0;
-unsigned long timeOfLastChangeServo1 = 0;
+unsigned long timeOfLastChangeServo2 = 0;
 
 // servo position
 int actualPositionServo3 = 0;
 int targetPositionServo3 = 0;
-int actualPositionServo1 = 0;
-int targetPositionServo1 = 0;
+int actualPositionServo2 = 0;
+int targetPositionServo2 = 0;
 
 // --- END INIT SERVO ---
 
@@ -460,56 +460,56 @@ void startServo3(int targetPos) {
     actualPositionServo3 = -1;
 }
 
-void startServo1(int targetPos) {
-    targetPositionServo1 = targetPos;
+void startServo2(int targetPos) {
+    targetPositionServo2 = targetPos;
 
     // start servo
-    servo1.attach(SERVO_1_PIN);
-    bAttachedServo1 = true;
+    servo2.attach(SERVO_2_PIN);
+    bAttachedServo2 = true;
 
     // sets the servo position 0-180
     // constrain(x, a, b)
-    // int targetPosCorrected = constrain(targetPositionServo1, SERVO_1_MIN, SERVO_1_MAX);
+    // int targetPosCorrected = constrain(targetPositionServo2, SERVO_2_MIN, SERVO_2_MAX);
     // map(value, fromLow, fromHigh, toLow, toHigh)
-    int targetPosCorrected = map(targetPositionServo1, 0, 180, SERVO_1_MIN, SERVO_1_MAX);
-    servo1.write(targetPosCorrected);
-    // timeOfLastChangeServo1 = millis();
+    int targetPosCorrected = map(targetPositionServo2, 0, 180, SERVO_2_MIN, SERVO_2_MAX);
+    servo2.write(targetPosCorrected);
+    // timeOfLastChangeServo2 = millis();
 
     if (DEBUG) {
-      Serial.print("actualPositionServo1: ");
-      Serial.println(actualPositionServo1);
-      Serial.print("targetPositionServo1: ");
-      Serial.println(targetPositionServo1);
+      Serial.print("actualPositionServo2: ");
+      Serial.println(actualPositionServo2);
+      Serial.print("targetPositionServo2: ");
+      Serial.println(targetPositionServo2);
       Serial.print("targetPos (corrected): ");
       Serial.println(targetPosCorrected);
     }
 
-    actualPositionServo1 = -1;
+    actualPositionServo2 = -1;
 }
 
-void stopservo3() {
+void stopServo3() {
    servo3.detach();
    bAttachedservo3 = false;
    actualPositionServo3 = targetPositionServo3;
-
-   if (DEBUG) {
-     Serial.println("stopping servo 2");
-   }
-}
-
-void stopServo1() {
-   servo1.detach();
-   bAttachedServo1 = false;
-   actualPositionServo1 = targetPositionServo1;
 
    if (DEBUG) {
      Serial.println("stopping servo 1");
    }
 }
 
+void stopServo2() {
+   servo2.detach();
+   bAttachedServo2 = false;
+   actualPositionServo2 = targetPositionServo2;
+
+   if (DEBUG) {
+     Serial.println("stopping servo 2");
+   }
+}
+
 
 /**
- * Move servo 2 back and forth
+ * Move servo 1 back and forth
  * 
  */
 void moveServoBackForth() {
@@ -543,7 +543,7 @@ void moveServoBackForth() {
   // stop servos
   /*
   if (bAttachedservo3 && timeNow - timeOfLastChangeservo3 > DETACH_DELAY) {
-    stopservo3();
+    stopServo3();
   }
   */
   if (bAttachedservo3 && (timeNow - timeOfLastChangeservo3) > DETACH_DELAY_SERVO_3) {
@@ -551,7 +551,7 @@ void moveServoBackForth() {
       Serial.print("servo time:");
       Serial.println(timeNow - timeOfLastChangeservo3);
     }
-    stopservo3();
+    stopServo3();
 
     actualPositionServo3 = targetPositionServo3;
   }
@@ -684,9 +684,9 @@ void turnRobot(int nDir, int nDelay) {
  */
 int getDistanceDir(int nAngle) {
 
-  startServo1(nAngle);
+  startServo2(nAngle);
   delay(DETACH_DELAY);
-  stopServo1();
+  stopServo2();
   int nDistance = getDistance();
 
   return nDistance;
@@ -711,9 +711,9 @@ int getDirectionOfNearestObject(int nMaxDistance = 100) {
   int nDistance = 0;
 
   for (int nAngle = nMinAngle; nAngle < nMaxAngle; nAngle += 30) { // 15
-    startServo1(nAngle);
+    startServo2(nAngle);
     delay(DETACH_DELAY);
-    stopServo1();
+    stopServo2();
     nDistance = getDistance();
 
     if (nDistance < nNearestObjectDistance) {
@@ -767,9 +767,9 @@ void doBattle() {
       nDistance = getDistanceDir(nAngleOfOpponent);
 
       // turn servo back to 90 degrees
-      startServo1(90);
+      startServo2(90);
       delay(DETACH_DELAY);
-      stopServo1();
+      stopServo2();
 
       if (nAngleOfOpponent < 90) {
         // turn left
@@ -926,9 +926,9 @@ void avoidObstacles() {
     TimerFreeTone(TONE_PIN, 220, 200);
 
     // measure distance in different directions and turn to free direction
-    startServo1(60);
+    startServo2(60);
     delay(DETACH_DELAY);
-    stopServo1();
+    stopServo2();
     nDistance = getDistance();
 
     if (nDistance > 15) {
@@ -936,9 +936,9 @@ void avoidObstacles() {
       turnRobot(LEFT, 200);
     }
     else {
-      startServo1(120);
+      startServo2(120);
       delay(DETACH_DELAY);
-      stopServo1();
+      stopServo2();
       nDistance = getDistance();
 
       if (nDistance > 15) {
@@ -953,9 +953,9 @@ void avoidObstacles() {
     }
 
     // set servo to middle position
-    startServo1(90);
+    startServo2(90);
     delay(DETACH_DELAY);
-    stopServo1();
+    stopServo2();
   }
 
 }
@@ -1128,47 +1128,47 @@ void setup() {
 
 // --- BEGIN SETUP SERVO ---
   pinMode(SERVO_3_PIN, OUTPUT);
-  pinMode(SERVO_1_PIN, OUTPUT);
+  pinMode(SERVO_2_PIN, OUTPUT);
 
   // check servos
-  startServo1(90);
+  startServo2(90);
   startServo3(90);
   delay(500);
-  stopServo1();
-  startServo1(45);
-  stopservo3();
+  stopServo2();
+  startServo2(45);
+  stopServo3();
   startServo3(45);
   delay(500);
-  stopServo1();
-  startServo1(135);
-  stopservo3();
+  stopServo2();
+  startServo2(135);
+  stopServo3();
   startServo3(135);
   delay(500);
-  stopServo1();
-  stopservo3();
+  stopServo2();
+  stopServo3();
 
   delay(500);
-  startServo1(90);
+  startServo2(90);
   startServo3(90);
   delay(500);
-  stopServo1();
-  stopservo3();
+  stopServo2();
+  stopServo3();
 
-  targetPositionServo1 = 90;
-  actualPositionServo1 = 90;
+  targetPositionServo2 = 90;
+  actualPositionServo2 = 90;
   targetPositionServo3 = 90;
   actualPositionServo3 = 90;
 
   /*
   startServo3(90);
   delay(500);
-  stopservo3();
+  stopServo3();
   startServo3(45);
   delay(500);
-  stopservo3();
+  stopServo3();
   startServo3(135);
   delay(500);
-  stopservo3();
+  stopServo3();
   targetPositionServo3 = 0;
   actualPositionServo3 = 0;
   */
@@ -1176,19 +1176,19 @@ void setup() {
   /*
   int val = 0;
 
-  servo1.attach(SERVO_1_PIN);
-  bAttachedServo1 = true;
+  servo2.attach(SERVO_2_PIN);
+  bAttachedServo2 = true;
   val = 0;
-  servo1.write(SERVO_1_MAX + (SERVO_1_MIN - SERVO_1_MAX) / 100 * val); // sets the servo position 0-180
+  servo2.write(SERVO_2_MAX + (SERVO_2_MIN - SERVO_2_MAX) / 100 * val); // sets the servo position 0-180
   delay(500);
   val = 90;
-  servo1.write(SERVO_1_MAX + (SERVO_1_MIN - SERVO_1_MAX) / 100 * val); // sets the servo position 0-180
+  servo2.write(SERVO_2_MAX + (SERVO_2_MIN - SERVO_2_MAX) / 100 * val); // sets the servo position 0-180
   delay(500);
   val = 180;
-  servo1.write(SERVO_1_MAX + (SERVO_1_MIN - SERVO_1_MAX) / 100 * val); // sets the servo position 0-180
+  servo2.write(SERVO_2_MAX + (SERVO_2_MIN - SERVO_2_MAX) / 100 * val); // sets the servo position 0-180
   delay(500);
-  servo1.detach();
-  bAttachedServo1 = false;
+  servo2.detach();
+  bAttachedServo2 = false;
   */
 
 // --- END SETUP SERVO ---
