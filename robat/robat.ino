@@ -46,6 +46,11 @@ int nAttackCounter = 0;
 
 // --- BEGIN INIT BUMPER ---
 
+// Mittels eines Schalters auf Pin BUMPER_PIN kann RoBat Kollisionen erkennen.
+// Der Joystick-Button ist mit Pin 2 verbunden. Wenn BUMPER_PIN ebenfalls
+// auf 2 gesetzt wird, wird ein Druck auf den Joystick-Button als Kollision
+// interpretiert.
+
 #define BUMPER_PIN 2
 
 // --- END INIT BUMPER ---
@@ -53,53 +58,62 @@ int nAttackCounter = 0;
 
 // --- BEGIN INIT BUZZER ---
 
+// Wir verwenden die TimerFreeTone Library von Tim Eckel in der Version 1.5
+// https://bitbucket.org/teckel12/arduino-timer-free-tone/downloads/
+
 #include <TimerFreeTone.h>
 
-// Set up speaker on a PWM pin (digital 9, 10 or 11)
-#define TONE_PIN 11 // Pin you have speaker/piezo connected to (be sure to include a 100 ohm resistor).
+// Der Buzzer wird an TONE_PIN angeschlossen. Das muss ein PWM Pin sein,
+// beim Arduino Nano also Pins 3, 5, 6, 9, 10 oder 11. Die RoBat-Platine
+// benutzt Pin 11
 
-#define NOTE_A4 220
-#define NOTE_A 440
-#define NOTE_CIS 554
-#define NOTE_D 587
-#define NOTE_E 659
-#define NOTE_FIS 740
-#define NOTE_G 784
-#define NOTE_G6 831
-#define NOTE_A6 880
+#define TONE_PIN 11 
+
+// Eine Zuordnung von Notennamen zu Frequenzen macht die Definition 
+// von Melodien leichter lesbar.
+// Quelle: https://de.wikipedia.org/wiki/Frequenzen_der_gleichstufigen_Stimmung
+
+#define NOTE_C3 131
+#define NOTE_D3 147
+#define NOTE_E3 165
+#define NOTE_F3 175
+#define NOTE_G3 196
+#define NOTE_A3 220
+#define NOTE_H3 247
+
+#define NOTE_C4 262
+#define NOTE_D4 294
+#define NOTE_E4 330
+#define NOTE_F4 349
+#define NOTE_G4 392
+#define NOTE_A4 440
+#define NOTE_H4 494
+
+// Notenlängen (in ms)
+#define GANZE 1000
+#define HALBE 500
+#define VIERTEL 250
+#define ACHTEL 125
+
 #define NOTE_PAUSE 0
 
+// Einstellen einer Melodie
+// Das Array melody[] enthält die Notenwerte, das gleich große Array
+// duration[] die zugehörigen Notenlängen.
+// Die Länge der Melodie wird durch melody_length festgelegt.
+
 #define melody_length 2
-int melody[] = { 262, 440 };
-int duration[] = { 250, 125 };
+int melody[]   = { NOTE_C4, NOTE_A };
+int duration[] = { VIERTEL, ACHTEL };
 
 /*
+
+// Eine andere Melodie
+
 #define melody_length 8
-int melody[] = { 262, 196, 196, 220, 196, 0, 247, 262 };
-int duration[] = { 250, 125, 125, 250, 250, 250, 250, 250 };
-*/
+int melody[]   = { NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, NOTE_PAUSE, NOTE_H3, NOTE_C4 };
+int duration[] = { VIERTEL, ACHTEL,  ACHTEL,  VIERTEL, VIERTEL, VIERTEL,    VIERTEL, VIERTEL };
 
-/*
-// jurassic park
-// D - D c# D - D c# D - E E GG f# D E  c# A  f# D E  ADG  f# f# E E
-#define melody_length 36
-int melody[] = {
-  NOTE_D, NOTE_PAUSE,
-  NOTE_D, NOTE_CIS, NOTE_D, NOTE_PAUSE,
-  NOTE_D, NOTE_CIS, NOTE_D, NOTE_PAUSE,
-  NOTE_E, NOTE_E, NOTE_PAUSE, NOTE_G, NOTE_G, NOTE_PAUSE,
-  NOTE_FIS, NOTE_D, NOTE_E, NOTE_PAUSE, NOTE_CIS, NOTE_A, NOTE_PAUSE,
-  NOTE_FIS, NOTE_D, NOTE_E, NOTE_PAUSE,
-  NOTE_A6, NOTE_D, NOTE_G, NOTE_PAUSE, NOTE_FIS, NOTE_FIS, NOTE_PAUSE, NOTE_E, NOTE_E };
-int duration[] = {
-  500, 250,
-  250, 250, 500, 250,
-  250, 250, 500, 250,
-  250, 500, 125, 250, 500, 125,
-  250, 250, 500, 125, 250, 500, 125,
-  250, 250, 500, 250,
-  250, 250, 500, 125, 250, 500, 125, 250, 500
-  };
 */
 
 // --- END INIT BUZZER ---
@@ -804,9 +818,6 @@ void doBattle() {
       nSpeed = 80;
       startMotor(MOTOR_A, FORWARD, nSpeed);
       startMotor(MOTOR_B, FORWARD, nSpeed);
-
-      // get current time
-      timeOfLastAction = millis();
 
       nBattleState = 7;
       break;
