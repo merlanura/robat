@@ -441,14 +441,14 @@ void startServo3(int targetPos) {
 
     // start servo
     servo3.attach(SERVO_3_PIN);
-    bAttachedservo3 = true;
+    bAttachedServo3 = true;
 
     // sets the servo position 0-180
     // servo3.write(SERVO_3_MAX + (SERVO_3_MIN - SERVO_3_MAX) / 100 * targetPositionServo3);
     int targetPosCorrected = map(targetPositionServo3, 0, 180, SERVO_3_MIN, SERVO_3_MAX);
     servo3.write(targetPosCorrected);
         
-    // timeOfLastChangeservo3 = millis();
+    // timeOfLastChangeServo3 = millis();
 
     if (DEBUG) {
       Serial.print("actualPositionServo3: ");
@@ -489,7 +489,7 @@ void startServo2(int targetPos) {
 
 void stopServo3() {
    servo3.detach();
-   bAttachedservo3 = false;
+   bAttachedServo3 = false;
    actualPositionServo3 = targetPositionServo3;
 
    if (DEBUG) {
@@ -522,34 +522,34 @@ void moveServoBackForth() {
   if (0 == actualPositionServo3) {
     targetPositionServo3 = 60;
     startServo3(targetPositionServo3);
-    timeOfLastChangeservo3 = timeNow;
+    timeOfLastChangeServo3 = timeNow;
   }
   else if (60 == actualPositionServo3) {
     targetPositionServo3 = 90;
     startServo3(targetPositionServo3);
-    timeOfLastChangeservo3 = timeNow;
+    timeOfLastChangeServo3 = timeNow;
   }
   else if (90 == actualPositionServo3) {
     targetPositionServo3 = 130;
     startServo3(targetPositionServo3);
-    timeOfLastChangeservo3 = timeNow;
+    timeOfLastChangeServo3 = timeNow;
   }
   else if (130 == actualPositionServo3) {
     targetPositionServo3 = 60;
     startServo3(targetPositionServo3);
-    timeOfLastChangeservo3 = timeNow;
+    timeOfLastChangeServo3 = timeNow;
   }
 
   // stop servos
   /*
-  if (bAttachedservo3 && timeNow - timeOfLastChangeservo3 > DETACH_DELAY) {
+  if (bAttachedServo3 && timeNow - timeOfLastChangeServo3 > DETACH_DELAY) {
     stopServo3();
   }
   */
-  if (bAttachedservo3 && (timeNow - timeOfLastChangeservo3) > DETACH_DELAY_SERVO_3) {
+  if (bAttachedServo3 && (timeNow - timeOfLastChangeServo3) > DETACH_DELAY_SERVO_3) {
     if (DEBUG) {
       Serial.print("servo time:");
-      Serial.println(timeNow - timeOfLastChangeservo3);
+      Serial.println(timeNow - timeOfLastChangeServo3);
     }
     stopServo3();
 
