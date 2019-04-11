@@ -5,7 +5,7 @@
  * Michael Ibsen
  * ibsen@gmx.net
  *
- * 2018-05-25
+ * 2019-04-11
  *
  * License: GNU GPLv3
  *
@@ -16,35 +16,32 @@
 
 #define DEBUG false
 
-// sleep duration
-// #define SLEEP_INTERVAL 10000
-
 // --- END INIT GENERAL ---
 
 
 // --- BEGIN INIT AUTOMANUAL ---
+
+// RoBat verfügt über drei verschiedene Betriebsmodi: 
+// - manuelle Steuerung (MANUAL)
+// - Hindernisvermeidung (AUTONOMOUS)
+// - Hebocon- / Kampf (BATTLE)
+
 #define MANUAL 0
 #define AUTONOMOUS 1
 #define BATTLE 2
 
-// enum Color: byte
-/*
-enum Mode: int
-{
-   MANUAL, AUTONOMOUS, BATTLE
-};
-*/
-
-// default mode: manual
+// Standard-Modus ist MANUAL
 int nMode = MANUAL;
 
 // Zustand des Endlichen Automaten
-int nBattleState = 1; // 0
+
+// Im BATTLE Modus durchläuft das Programm verschiedene Zustände.
+// Hier initialisieren wir die Zustandsvariablen
+
+int nBattleState = 1; 
 int nAttackCounter = 0;
 
-unsigned long timeOfLastAction = 0;
-
-// --- BEGIN INIT AUTOMANUAL ---
+// --- END INIT AUTOMANUAL ---
 
 
 // --- BEGIN INIT BUMPER ---
