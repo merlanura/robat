@@ -764,7 +764,7 @@ void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
  *
  */
 void turnRobot(int nDir, int nDelay) {
-    stopMotors();
+    stopMotors(FORWARD);
     delay(100);
 
     int nSpeed = 128;
@@ -777,7 +777,7 @@ void turnRobot(int nDir, int nDelay) {
     }
 
     delay(nDelay); 
-    stopMotors();
+    stopMotors(FORWARD);
 }
 
 // --- END FUNCTIONS MOTOR ---
@@ -925,7 +925,7 @@ void doBattle() {
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(1000);
       
-            stopMotors();
+            stopMotors(FORWARD);
 
             if (1 == nAttackCounter) {
                 // beim ersten Angriff nur vorwärts fahren
@@ -954,7 +954,7 @@ void doBattle() {
             startMotors(BACKWARD, nSpeed, BACKWARD, nSpeed);
             delay(800);
             
-            stopMotors();
+            stopMotors(BACKWARD);
 
             nBattleState = 0;
             break;
@@ -973,7 +973,7 @@ void doBattle() {
 
         case 6:
             // Stop
-            stopMotors();
+            stopMotors(FORWARD);
 
             break;
 
@@ -990,7 +990,7 @@ void doBattle() {
             // Zustandsübergang, wenn "lange" kein Gegner gesehen wurde
             if (millis() - timeOfLastDistanceMeasurement > 1000) {
                 // anhalten und erneut nach Gegnern suchen
-                stopMotors();
+                stopMotors(FORWARD);
 
                 nBattleState = 0;
             }
@@ -1025,7 +1025,7 @@ void avoidObstacles() {
     if (digitalRead(BUMPER_PIN) == LOW) {
         // Zusammenstoß mit Hindernis erkannt. Ausweichen
 
-        stopMotors();
+        stopMotors(FORWARD);
 
         delay(250);
         startMotors(BACKWARD, 128, BACKWARD, 128); 
@@ -1042,7 +1042,7 @@ void avoidObstacles() {
     }
     else {
         // Kollisionsgefahr. Anhalten
-        stopMotors();
+        stopMotors(FORWARD);
 
         // Zustand durch Töne signalisieren
         TimerFreeTone(TONE_PIN, NOTE_A4, 80);
