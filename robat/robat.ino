@@ -341,34 +341,32 @@ int getDistance(int nMeasurements = 3) {
  * Zeigt die Entfernung zum nächsten Objekt mit den LEDs 0 und 1 durch
  * unterschiedliche Farben an.
  * 
- * 
+ * 150cm - oo: schwarz 
+ *  51cm - 150cm: grün
+ *  31cm -  50cm: blau
+ *  16cm -  30cm: türkis
+ *   0cm -  15cm: rot
  *
  * @param int nDistance distance to object in this direction
  *
  */
 void showDistance(int nDistance) {
 
-    // color of LED depends on the distance:
-    // green: "very far", greater than 50cm
-    // blue: 20 cm > distance <= 50cm
-    // purple: 10 cm > distance <= 20cm
-    // red: < 10 cm
-
     CRGB color = CRGB::Black;
     if (nDistance > 150) {
       color = CRGB::Black;
     }
     else if ((nDistance <= 150) && (nDistance > 50)) {
-      color = CRGB::Red; // green
+      color = CRGB::Red; // wird grün angezeigt
     }
-    else if ((nDistance <= 60) && (nDistance > 30)) {
+    else if ((nDistance <= 50) && (nDistance > 30)) {
       color = CRGB::Blue;
     }
     else if ((nDistance <= 30) && (nDistance > 15)) {
       color = CRGB::DarkTurquoise;
     }
     else if (nDistance > 0) {
-      color = CRGB::Green; // red
+      color = CRGB::Green; // wird rot angezeigt
     }
     else {
       color = CRGB::Black;
@@ -389,20 +387,22 @@ void showDistance(int nDistance) {
 
 // --- BEGIN FUNCTIONS SERVO ---
 
+/**
+ * Stellt die Zielposition für Servo 1 ein und schaltet den Servomotor ein.
+ * 
+ */
 void startServo1(int targetPos) {
     targetPositionServo1 = targetPos;
 
-    // start servo
+    // starte Servo
     servo1.attach(SERVO_1_PIN);
-    bAttachedServo1 = true;
+    bAttachedServo1 = true; // merken, dass der Servo eingeschaltet ist
 
-    // sets the servo position 0-180
-    // servo1.write(SERVO_1_MAX + (SERVO_1_MIN - SERVO_1_MAX) / 100 * targetPositionServo1);
+    // Setzt die Servo-Position (0..180)
+    // Dabei werden die minimale und maximale Position berücksichtigt.
     int targetPosCorrected = map(targetPositionServo1, 0, 180, SERVO_1_MIN, SERVO_1_MAX);
     servo1.write(targetPosCorrected);
         
-    // timeOfLastChangeServo1 = millis();
-
     if (DEBUG) {
       Serial.print("actualPositionServo1: ");
       Serial.println(actualPositionServo1);
@@ -413,20 +413,22 @@ void startServo1(int targetPos) {
     actualPositionServo1 = -1;
 }
 
+
+/**
+ * Stellt die Zielposition für Servo 2 ein und schaltet den Servomotor ein.
+ * 
+ */
 void startServo2(int targetPos) {
     targetPositionServo2 = targetPos;
 
-    // start servo
+    // starte Servo
     servo2.attach(SERVO_2_PIN);
     bAttachedServo2 = true;
 
-    // sets the servo position 0-180
-    // constrain(x, a, b)
-    // int targetPosCorrected = constrain(targetPositionServo2, SERVO_2_MIN, SERVO_2_MAX);
-    // map(value, fromLow, fromHigh, toLow, toHigh)
+    // Setzt die Servo-Position (0..180)
+    // Dabei werden die minimale und maximale Position berücksichtigt.
     int targetPosCorrected = map(targetPositionServo2, 0, 180, SERVO_2_MIN, SERVO_2_MAX);
     servo2.write(targetPosCorrected);
-    // timeOfLastChangeServo2 = millis();
 
     if (DEBUG) {
       Serial.print("actualPositionServo2: ");
@@ -440,74 +442,81 @@ void startServo2(int targetPos) {
     actualPositionServo2 = -1;
 }
 
+
+/**
+ * Hält Servo 1 an.
+ * 
+ */
 void stopServo1() {
    servo1.detach();
    bAttachedServo1 = false;
    actualPositionServo1 = targetPositionServo1;
 
    if (DEBUG) {
-     Serial.println("stopping servo 1");
+       Serial.println("stopping servo 1");
    }
 }
 
+
+/**
+ * Hält Servo 2 an.
+ * 
+ */
 void stopServo2() {
    servo2.detach();
    bAttachedServo2 = false;
    actualPositionServo2 = targetPositionServo2;
 
    if (DEBUG) {
-     Serial.println("stopping servo 2");
+       Serial.println("stopping servo 2");
    }
 }
 
 
 /**
- * Move servo 1 back and forth
+ * Bewegt Servo 1 hin und her. Dabei werden nacheinander mehrere 
+ * Positionen angesteuert.
  * 
  */
 void moveServoBackForth() {
-  // move servo back and forth
 
-  unsigned long timeNow = millis();
+    unsigned long timeNow = millis();
 
-  // cycle servo through 60, 90 and 130 degrees
-  // 
-  if (0 == actualPositionServo1) {
-    targetPositionServo1 = 60;
-    startServo1(targetPositionServo1);
-    timeOfLastChangeServo1 = timeNow;
-  }
-  else if (60 == actualPositionServo1) {
-    targetPositionServo1 = 90;
-    startServo1(targetPositionServo1);
-    timeOfLastChangeServo1 = timeNow;
-  }
-  else if (90 == actualPositionServo1) {
-    targetPositionServo1 = 130;
-    startServo1(targetPositionServo1);
-    timeOfLastChangeServo1 = timeNow;
-  }
-  else if (130 == actualPositionServo1) {
-    targetPositionServo1 = 60;
-    startServo1(targetPositionServo1);
-    timeOfLastChangeServo1 = timeNow;
-  }
+    // Positionen sind 60, 90 und 130 Grad
 
-  // stop servos
-  /*
-  if (bAttachedServo1 && timeNow - timeOfLastChangeServo1 > DETACH_DELAY) {
-    stopServo1();
-  }
-  */
-  if (bAttachedServo1 && (timeNow - timeOfLastChangeServo1) > DETACH_DELAY_SERVO_1) {
-    if (DEBUG) {
-      Serial.print("servo time:");
-      Serial.println(timeNow - timeOfLastChangeServo1);
+    if (0 == actualPositionServo1) {
+        targetPositionServo1 = 60;
+        startServo1(targetPositionServo1);
+        timeOfLastChangeServo1 = timeNow;
     }
-    stopServo1();
+    else if (60 == actualPositionServo1) {
+        targetPositionServo1 = 90;
+        startServo1(targetPositionServo1);
+        timeOfLastChangeServo1 = timeNow;
+    }
+    else if (90 == actualPositionServo1) {
+        targetPositionServo1 = 130;
+        startServo1(targetPositionServo1);
+        timeOfLastChangeServo1 = timeNow;
+    }
+    else if (130 == actualPositionServo1) {
+        targetPositionServo1 = 60;
+        startServo1(targetPositionServo1);
+        timeOfLastChangeServo1 = timeNow;
+    }
 
-    actualPositionServo1 = targetPositionServo1;
-  }
+    // Servo anhalten, wenn die Position erreicht ist bzw. die Zeit für die 
+    // Erreichung der Position abgelaufen ist.
+    if (bAttachedServo1 && (timeNow - timeOfLastChangeServo1) > DETACH_DELAY_SERVO_1) {
+        if (DEBUG) {
+            Serial.print("servo time:");
+            Serial.println(timeNow - timeOfLastChangeServo1);
+        }
+
+        stopServo1();
+
+        actualPositionServo1 = targetPositionServo1;
+    }
 }
 
 // --- BEGIN FUNCTIONS SERVO ---
