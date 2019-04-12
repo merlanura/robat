@@ -288,6 +288,11 @@ int nMotorSpeed2 = 0;
 int nJoyPosV = 512;
 int nJoyPosH = 512;
 
+// Werte zwischen JOY_MIDDLE_MIN und JOY_MIDDLE_MAX werden als 
+// Mittelstellung interpretiert
+#define JOY_MIDDLE_MIN 472
+#define JOY_MIDDLE_MAX 552
+
 // --- END INIT JOYSTICK ---
 
 
@@ -864,7 +869,6 @@ void doBattle() {
 
 // Diese Funktionen sind abhängig von den Abschnitten MOTOR, SERVO und ULTRASONIC
 
-
 /**
  * Die Funktion versucht, den Roboter so zu steuern, dass er nicht 
  * gegen Hindernisse prallt.
@@ -954,145 +958,141 @@ void avoidObstacles() {
 
 // --- BEGIN FUNCTIONS MANUAL_CONTROL ---
 
-// depends on MOTOR and JOYSTICK
+// Diese Funktionen sind abhängig von den Abschnitten MOTOR und JOYSTICK
 
+/**
+ * Manuelle Steuerung des RoBat, über die Joystick-Positionen wird die
+ * Geschwindigkeit und Drehrichtung der Motoren gesteuert.
+ * 
+ */
 void manualControl() {
 
-  // Read the Joystick X and Y positions
+    // Joystick Position einlesen
 
-  nJoyPosV = analogRead(JOY_VERTICAL_PIN);
-  nJoyPosH = analogRead(JOY_HORIZONTAL_PIN);
+    nJoyPosV = analogRead(JOY_VERTICAL_PIN);
+    nJoyPosH = analogRead(JOY_HORIZONTAL_PIN);
 
-/*
-Serial.print(nJoyPosV);
-Serial.print(",");
-Serial.println(nJoyPosH);
-delay(500);
-*/
+    // Der Joystick liefert Werte zwischen 0 und 1023 in X- und Y-Richtung.
+    // Wenn der Joystick in der Mittelstellung ist, müsste er theoretisch
+    // einen Wert von 512 für beide Richtungen liefern. In der Praxis
+    // weichen die Werte davon ab. Wir definieren deshalb alle Werte
+    // zwischen JOY_MIDDLE_MIN und JOY_MIDDLE_MAX als Mittelstellung.
 
-  // Determine if this is a forward or backward motion
-  // Do this by reading the Verticle Value
-  // Apply results to MotorSpeed and to Direction
+    // Wird der Joystick nach hinten gedrückt (nJoyPosV < JOY_MIDDLE_MIN),
+    // soll sich der Roboter rückwärts bewegen. WIrd der Joystick nach
+    // vorne gedrückt (nJoyPosV > JOY_MIDDLE_MAX), bewegt sich der Roboter 
+    // vorwärts.
 
-  if (nJoyPosV < 460)
-  {
-    // This is Backward
+    if (nJoyPosV < JOY_MIDDLE_MIN) {
+        // rückwärts
 
-    // Set Motor A backward
+        // Motor A rückwärts
+        digitalWrite(MOTOR_A_IN1_PIN, LOW);
+        digitalWrite(MOTOR_A_IN2_PIN, HIGH);
 
-    digitalWrite(MOTOR_A_IN1_PIN, LOW);
-    digitalWrite(MOTOR_A_IN2_PIN, HIGH);
+        // Motor B rückwärts
+        digitalWrite(MOTOR_B_IN3_PIN, LOW);
+        digitalWrite(MOTOR_B_IN4_PIN, HIGH);
 
-    // Set Motor B backward
+        // Motorgeschwindigkeit ist abhängig davon, wie weit der Joystick
+        // gedrückt wird.
+        
+        // für die Rückwärtsfahrt werden die Werte umgekehrt
+        
+        nJoyPosV = nJoyPosV - JOY_MIDDLE_MIN; // negative Zahlen
+        nJoyPosV = nJoyPosV * -1;  // positiv machen
 
-    digitalWrite(MOTOR_B_IN3_PIN, LOW);
-    digitalWrite(MOTOR_B_IN4_PIN, HIGH);
+        nMotorSpeed1 = map(nJoyPosV, 0, JOY_MIDDLE_MIN, 0, MAX_SPEED);
+        nMotorSpeed2 = map(nJoyPosV, 0, JOY_MIDDLE_MIN, 0, MAX_SPEED);
+    }
+    else if (nJoyPosV > JOY_MIDDLE_MAX) {
+        // vorwärts
 
-    //Determine Motor Speeds
+        // Motor A vorwärts
+        digitalWrite(MOTOR_A_IN1_PIN, HIGH);
+        digitalWrite(MOTOR_A_IN2_PIN, LOW);
 
-    // As we are going backwards we need to reverse readings
+        // Motor B vorwärts
+        digitalWrite(MOTOR_B_IN3_PIN, HIGH);
+        digitalWrite(MOTOR_B_IN4_PIN, LOW);
 
-    nJoyPosV = nJoyPosV - 460; // This produces a negative number
-    nJoyPosV = nJoyPosV * -1;  // Make the number positive
+        // Motorgeschwindigkeit ermitteln
+        nMotorSpeed1 = map(nJoyPosV, JOY_MIDDLE_MAX, 1023, 0, MAX_SPEED);
+        nMotorSpeed2 = map(nJoyPosV, JOY_MIDDLE_MAX, 1023, 0, MAX_SPEED);
+    }
+    else {
+        // anhalten
+        
+        nMotorSpeed1 = 0;
+        nMotorSpeed2 = 0;
+    }
 
-    nMotorSpeed1 = map(nJoyPosV, 0, 460, 0, MAX_SPEED);
-    nMotorSpeed2 = map(nJoyPosV, 0, 460, 0, MAX_SPEED);
+    // Steuerung links und rechts
 
-  }
-  else if (nJoyPosV > 564)
-  {
-    // This is Forward
+    // Die horizontale Joystickposition beeinflusst die Motorgeschwindigkeit    
 
-    // Set Motor A forward
+    if (nJoyPosH < JOY_MIDDLE_MIN) {
+        // links
+        
+        // Bei der Bewegung nach links werden die Werte umgekehrt
+        
+        nJoyPosH = nJoyPosH - JOY_MIDDLE_MIN; // negative Zahlen
+        nJoyPosH = nJoyPosH * -1;  // positiv machen
 
-    digitalWrite(MOTOR_A_IN1_PIN, HIGH);
-    digitalWrite(MOTOR_A_IN2_PIN, LOW);
+        // Die Werte vom Joystick liegen zwischen 0 und 1023. Sie werden 
+        // auf den Bereich der Motorgeschwindigkeit von 0 bis MAX_SPEED
+        // abgebildet.
+        
+        nJoyPosH = map(nJoyPosH, 0, JOY_MIDDLE_MIN, 0, MAX_SPEED);
 
-    // Set Motor B forward
+        // Motorgeschwindigkeiten setzen
+        nMotorSpeed1 = nMotorSpeed1 - nJoyPosH;
+        nMotorSpeed2 = nMotorSpeed2 + nJoyPosH;
 
-    digitalWrite(MOTOR_B_IN3_PIN, HIGH);
-    digitalWrite(MOTOR_B_IN4_PIN, LOW);
+        // Motorgeschwindigkeit im erlaubten Bereich halten
+        if (nMotorSpeed1 < 0) {
+            nMotorSpeed1 = 0;
+        }
+        if (nMotorSpeed2 > MAX_SPEED) {
+            nMotorSpeed2 = MAX_SPEED;
+        }
+    }
+    else if (nJoyPosH > JOY_MIDDLE_MAX) {
+        // rechts
 
-    //Determine Motor Speeds
+        // Die Werte vom Joystick liegen zwischen 0 und 1023. Sie werden 
+        // auf den Bereich der Motorgeschwindigkeit von 0 bis MAX_SPEED
+        // abgebildet.
 
-    nMotorSpeed1 = map(nJoyPosV, 564, 1023, 0, MAX_SPEED);
-    nMotorSpeed2 = map(nJoyPosV, 564, 1023, 0, MAX_SPEED);
+        nJoyPosH = map(nJoyPosH, JOY_MIDDLE_MAX, 1023, 0, MAX_SPEED);
 
-  }
-  else
-  {
-    // This is Stopped
+        // Motorgeschwindigkeiten setzen
+        nMotorSpeed1 = nMotorSpeed1 + nJoyPosH;
+        nMotorSpeed2 = nMotorSpeed2 - nJoyPosH;
 
-    nMotorSpeed1 = 0;
-    nMotorSpeed2 = 0;
+        // Motorgeschwindigkeit im erlaubten Bereich halten
+        if (nMotorSpeed1 > MAX_SPEED) {
+            nMotorSpeed1 = MAX_SPEED;
+        }
+        if (nMotorSpeed2 < 0) {
+            nMotorSpeed2 = 0;
+        }
+    }
 
-  }
+    // bei sehr niedrigen Moitorgeschwindigkeiten laufen die Motoren 
+    // nicht an, manchmal entsteht ein summendes Geräusch. Das wird hier
+    // unterdrückt.
+    
+    if (nMotorSpeed1 < 8) {
+        nMotorSpeed1 = 0;
+    }
+    if (nMotorSpeed2 < 8) {
+        nMotorSpeed2 = 0;
+    }
 
-  // Now do the steering
-  // The Horizontal position will "weigh" the motor speed
-  // Values for each motor
-
-  if (nJoyPosH < 460)
-  {
-    // Move Left
-
-    // As we are going left we need to reverse readings
-
-    nJoyPosH = nJoyPosH - 460; // This produces a negative number
-    nJoyPosH = nJoyPosH * -1;  // Make the number positive
-
-    // Map the number to a value of 255 maximum
-
-    nJoyPosH = map(nJoyPosH, 0, 460, 0, MAX_SPEED);
-
-
-    nMotorSpeed1 = nMotorSpeed1 - nJoyPosH;
-    nMotorSpeed2 = nMotorSpeed2 + nJoyPosH;
-
-    // Don't exceed range of 0-255 for motor speeds
-
-    if (nMotorSpeed1 < 0)nMotorSpeed1 = 0;
-    if (nMotorSpeed2 > MAX_SPEED)nMotorSpeed2 = MAX_SPEED;
-
-  }
-  else if (nJoyPosH > 564)
-  {
-    // Move Right
-
-    // Map the number to a value of 255 maximum
-
-    nJoyPosH = map(nJoyPosH, 564, 1023, 0, MAX_SPEED);
-
-
-    nMotorSpeed1 = nMotorSpeed1 + nJoyPosH;
-    nMotorSpeed2 = nMotorSpeed2 - nJoyPosH;
-
-    // Don't exceed range of 0-255 for motor speeds
-
-    if (nMotorSpeed1 > MAX_SPEED)nMotorSpeed1 = MAX_SPEED;
-    if (nMotorSpeed2 < 0)nMotorSpeed2 = 0;
-
-  }
-
-
-  // Adjust to prevent "buzzing" at very low speed
-
-  if (nMotorSpeed1 < 8)nMotorSpeed1 = 0;
-  if (nMotorSpeed2 < 8)nMotorSpeed2 = 0;
-
-  // Set the motor speeds
-
-  analogWrite(MOTOR_A_ENABLE_PIN, nMotorSpeed1);
-  analogWrite(MOTOR_B_ENABLE_PIN, nMotorSpeed2);
-
-  if (true == DEBUG) {
-    /*
-    Serial.print("nMotorSpeed1");
-    Serial.println(nMotorSpeed1);
-    Serial.print("nMotorSpeed2");
-    Serial.println(nMotorSpeed2);
-    */
-  }
+    // Motorgeschwindigkeiten setzen    
+    analogWrite(MOTOR_A_ENABLE_PIN, nMotorSpeed1);
+    analogWrite(MOTOR_B_ENABLE_PIN, nMotorSpeed2);
 }
 
 // --- END FUNCTIONS MANUAL_CONTROL ---
