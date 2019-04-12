@@ -638,191 +638,223 @@ void turnRobot(int nDir, int nDelay) {
 
 // --- BEGIN FUNCTIONS DO_BATTLE ---
 
-// depends on MOTOR, SERVO and ULTRASONIC
+// Diese Funktionen sind abhängig von den Abschnitten MOTOR, SERVO und ULTRASONIC
 
 /**
- * Measures the distance to nearest object at angle nAngle
+ * Misst den Abstand zum nächsten Objekt in Richtung nAngle
  *
- * @param int nAngle: angle
- * @return int nDistance: distance to object in cm
+ * @param int nAngle: Winkel
+ * @return int nDistance: Abstand zum Objekt in cm
  *
  */
 int getDistanceDir(int nAngle) {
 
-  startServo2(nAngle);
-  delay(DETACH_DELAY_SERVO_2);
-  stopServo2();
-  int nDistance = getDistance();
+    // Servo auf den Winkel ausrichten
+    startServo2(nAngle);
+    delay(DETACH_DELAY_SERVO_2);
+    stopServo2();
 
-  return nDistance;
+    // Abstand messen
+    int nDistance = getDistance();
+
+    return nDistance;
 }
 
 
 /**
- * Measures the distance to the nearest object in different directions
- * and returns the angle of the direction to the nearest object.
- * If more than one nearest objects exist, the smallest angle will be returned.
- * If no object is near enough, an angle of 90 degrees will be returned.
+ * Misst den Abstand zum nächsten Objekt in verschiedenen Richtungen. 
+ * Liefert die Richtung (Winkel) des nächsten Objekts zurück.
+ * 
+ * Falls es mehrere nächste Objekte gibt, wird der kleinere Winkel 
+ * zurückgegeben.
  *
- * @param int nMaxDistance: maximum distance of an object to be "near", defaults to 100cm
- * @return int nAngle: angle to nearest object
+ * Falls kein Objekt weniger als nMaxDistance cm entfernt ist, wird ein 
+ * Winkel von 90 Grad zurückgeliefert.
+ * 
+ * @param int nMaxDistance: max. Entfernung eines Objekts, Default 100cm
+ * @return int nAngle: Winkel zum nächsten Objekt oder 90 Grad, falls kein Objekt in der Nähe ist.
  *
  */
 int getDirectionOfNearestObject(int nMaxDistance = 100) {
-  int nMinAngle = 30; // 20
-  int nMaxAngle = 150; // 160
-  int nNearestObjectAngle = 90; // default
-  int nNearestObjectDistance = 999;
-  int nDistance = 0;
+    int nMinAngle = 30; // 20
+    int nMaxAngle = 150; // 160
+    int nNearestObjectAngle = 90; // default
+    int nNearestObjectDistance = 999;
+    int nDistance = 0;
 
-  for (int nAngle = nMinAngle; nAngle < nMaxAngle; nAngle += 30) { // 15
-    startServo2(nAngle);
-    delay(DETACH_DELAY_SERVO_2);
-    stopServo2();
-    nDistance = getDistance();
+    // mehrer Winkel durchlaufen und jeweils den Abstand messen
+    for (int nAngle = nMinAngle; nAngle < nMaxAngle; nAngle += 30) { // 15
+        startServo2(nAngle);
+        delay(DETACH_DELAY_SERVO_2);
+        stopServo2();
+        nDistance = getDistance();
 
-    if (nDistance < nNearestObjectDistance) {
-      nNearestObjectDistance = nDistance;
-      nNearestObjectAngle = nAngle;
+        if (nDistance < nNearestObjectDistance) {
+            nNearestObjectDistance = nDistance;
+            nNearestObjectAngle = nAngle;
+        }
     }
-  }
 
-  return nNearestObjectAngle;
+    return nNearestObjectAngle;
 }
 
 
+/**
+ * Die Funktion sucht nach Objekten in der Nähe und greift sie an. 
+ * 
+ * Die Funktion durchläuft verschiedene Zustände ("Endlicher Automat"). 
+ * Jeder Zustand ist mit einer Handlung verbunden.
+ * Der Übergang in einen anderen Zustand wird über interne und externe
+ * Bedingungen bestimmt.
+ * 
+ */
 void doBattle() {
-  int nDistance = getDistance(); // ultrasonic.distanceRead(CM);
-  int nAngleOfOpponent = 90;
-  int nSpeed = 0;
+    // Standardeinstellungen
+    int nDistance = getDistance(); 
+    int nAngleOfOpponent = 90;
+    int nSpeed = 0;
 
-  if (DEBUG) {
-    Serial.print("distance to object: ");
-    Serial.print(nDistance);
-    Serial.print(", ");
-    Serial.print("battle state: ");
-    Serial.println(nBattleState);
-    
-  }
+    // Entfernung zum nächsten Objekt mit LEDs anzeigen
+    showDistance(nDistance);
 
-  // Entfernung mit LEDs anzeigen
-  showDistance(nDistance);
+    // Zustand setzen
 
-  // set battle state
+    // Entfernung zum Ziel < 30cm? Dann Attacke
+    // sonst: links und rechts gucken und Ziel suchen.
+    // In Richtung auf das nächste Ziel drehen
+    // langsame Fahrt voraus
 
-  // Entfernung zum Ziel < 30cm? Dann Attacke
-  // sonst: links und rechts gucken und Ziel suchen.
-  // In Richtung auf das nächste Ziel drehen
-  // langsame Fahrt voraus
+    // nBattleState:
+    // 0 - lauern, Gegner suchen, Robat auf Gegner ausrichten
+    // 1 - Angriff geradeaus
+    // 2 - Angriff mit Schlenker links
+    // 3 - Angriff mit Schlenker rechts
+    // 4 - Zurückweichen
+    // 5 - Suchfahrt geradeaus starten
+    // 6 - Stop
+    // 7 - Suchfahrt geradeaus
 
-  // nBattleState:
-  // 0 - lauern, Gegner suchen, Robat auf Gegner ausrichten
-  // 1 - Angriff geradeaus
-  // 2 - Angriff mit Schlenker links
-  // 3 - Angriff mit Schlenker rechts
-  // 4 - Zurückweichen
-  // 5 - Suchfahrt geradeaus starten
-  // 6 - Stop
-  // 7 - Suchfahrt geradeaus
+    switch (nBattleState) {
+        case 0:
+            // lauern, Gegner suchen, Robat auf Gegner ausrichten
+            
+            // Abstand in verschiedene Richtungen messen und zum nächsten 
+            // Objekt drehen
+            nAngleOfOpponent = getDirectionOfNearestObject();
+            nDistance = getDistanceDir(nAngleOfOpponent);
 
-  switch (nBattleState) {
-    case 0:
-      // measure distance in different directions and turn to opponent
-      nAngleOfOpponent = getDirectionOfNearestObject();
-      nDistance = getDistanceDir(nAngleOfOpponent);
+            // Servo zurück auf 90 Grad (geradeaus)
+            startServo2(90);
+            delay(DETACH_DELAY_SERVO_2);
+            stopServo2();
 
-      // turn servo back to 90 degrees
-      startServo2(90);
-      delay(DETACH_DELAY_SERVO_2);
-      stopServo2();
+            if (nAngleOfOpponent < 90) {
+                // drehe den Roboter nach links
+                turnRobot(LEFT, 4 * (90 - nAngleOfOpponent));
+            }
+            else if (nAngleOfOpponent > 90) {
+                // drehe den Roboter nach rechts
+                turnRobot(RIGHT, 4 * (nAngleOfOpponent - 90));
+            }
+            else {
+                // nächstes Objekt liegt recht voraus, Roboter nicht drehen
+            }
 
-      if (nAngleOfOpponent < 90) {
-        // turn left
-        turnRobot(LEFT, 4 * (90 - nAngleOfOpponent));
-      }
-      else if (nAngleOfOpponent > 90) {
-        // turn right
-        turnRobot(RIGHT, 4 * (nAngleOfOpponent - 90));
-      }
-      else {
-        // opponent is right ahead, don't turn
-      }
-
-      if (nDistance < 20) {
-        // Attacke
-        // nAttackCounter++;
-        // TODO: different actions depending on number of attacks
-        nBattleState = 1;
-      }
-      else {
-        // Suchfahrt geradeaus
-        nBattleState = 5;
-      }
-      break;
-    case 1:
-      nAttackCounter++; // Anzahl durchgeführter Angriffe
+            if (nDistance < 20) {
+                // Angriff
+                nBattleState = 1;
+            }
+            else {
+                // Suchfahrt geradeaus
+                nBattleState = 5;
+            }
+            break;
+        case 1:
+            // Angriff geradeaus
+            
+            nAttackCounter++; // Anzahl durchgeführter Angriffe
       
-      nSpeed = 180; // full speed ahead
-      startMotor(MOTOR_A, FORWARD, nSpeed);
-      startMotor(MOTOR_B, FORWARD, nSpeed);
-      delay(1000);
+            nSpeed = 180; // volle Kraft voraus
+            startMotor(MOTOR_A, FORWARD, nSpeed);
+            startMotor(MOTOR_B, FORWARD, nSpeed);
+            delay(1000);
       
-      stopMotor(MOTOR_A);
-      stopMotor(MOTOR_B);
+            stopMotor(MOTOR_A);
+            stopMotor(MOTOR_B);
 
-      
-      if (1 == nAttackCounter) {
-        // beim ersten Angriff nur vorwärts fahren
-        nBattleState = 0; // lauern
-      }
-      else {
-        nBattleState = 4; // rückwärts fahren
-      }
-      
-      //nBattleState = 4; // rückwärts fahren
-      break;
-    case 2:
-      break;
-    case 3:
-      break;
-    case 4:
-      nSpeed = 100;
-      startMotor(MOTOR_A, BACKWARD, nSpeed);
-      startMotor(MOTOR_B, BACKWARD, nSpeed);
-      delay(800);
-      stopMotor(MOTOR_A);
-      stopMotor(MOTOR_B);
-      nBattleState = 0;
-      break;
-    case 5:
-      // Suchfahrt geradeaus starten
-      nSpeed = 80;
-      startMotor(MOTOR_A, FORWARD, nSpeed);
-      startMotor(MOTOR_B, FORWARD, nSpeed);
+            if (1 == nAttackCounter) {
+                // beim ersten Angriff nur vorwärts fahren
+                nBattleState = 0; // lauern
+            }
+            else {
+                nBattleState = 4; // rückwärts fahren
+            }
 
-      nBattleState = 7;
-      break;
-    case 6:
-      stopMotor(MOTOR_A);
-      stopMotor(MOTOR_B);
-      break;
-    case 7:
-      // Suchfahrt geradeaus
-      nDistance = getDistanceDir(90);
-      if (nDistance < 20) {
-        nBattleState = 1;
-      }
+            break;
 
-      // change state on timeout
-      if (millis() - timeOfLastDistanceMeasurement > 1000) {
-        // // do not stop motors, just change state to search for opponent
-        // stop motors and change state to search for opponent
-        stopMotor(MOTOR_A);
-        stopMotor(MOTOR_B);
-        nBattleState = 0;
-      }
-      break;
-  }
+        case 2:
+            // Angriff mit Schlenker links
+            // noch nicht implementiert
+            break;
+
+        case 3:
+            // Angriff mit Schlenker rechts
+            // noch nicht implementiert
+            break;
+
+        case 4:
+            // Zurückweichen
+
+            nSpeed = 100;
+            startMotor(MOTOR_A, BACKWARD, nSpeed);
+            startMotor(MOTOR_B, BACKWARD, nSpeed);
+            delay(800);
+            stopMotor(MOTOR_A);
+            stopMotor(MOTOR_B);
+
+            nBattleState = 0;
+            break;
+
+        case 5:
+            // Suchfahrt geradeaus starten
+
+            // Beginn der Suchfahrt merken
+            timeOfLastDistanceMeasurement = millis();
+            
+            nSpeed = 80;
+            startMotor(MOTOR_A, FORWARD, nSpeed);
+            startMotor(MOTOR_B, FORWARD, nSpeed);
+
+            nBattleState = 7;
+            break;
+
+        case 6:
+            // Stop
+            
+            stopMotor(MOTOR_A);
+            stopMotor(MOTOR_B);
+            break;
+
+        case 7:
+            // Suchfahrt geradeaus
+
+            nDistance = getDistanceDir(90);
+
+            if (nDistance < 20) {
+                // Angriff
+                nBattleState = 1;
+            }
+
+            // Zustandsübergang, wenn "lange" kein Gegner gesehen wurde
+            if (millis() - timeOfLastDistanceMeasurement > 1000) {
+                // anhalten und erneut nach Gegnern suchen
+                stopMotor(MOTOR_A);
+                stopMotor(MOTOR_B);
+
+                nBattleState = 0;
+            }
+            break;
+    }
 }
 
 // --- END FUNCTIONS DO_BATTLE ---
