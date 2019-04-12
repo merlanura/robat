@@ -1227,83 +1227,92 @@ void setup() {
 
 // --- BEGIN SETUP WS2811 ---
 
-  pinMode(WS2811_PIN, OUTPUT);
+    pinMode(WS2811_PIN, OUTPUT);
 
-  // initialize the LEDS
-  FastLED.addLeds<WS2811, WS2811_PIN, RGB>(leds, NUM_LEDS);
+    // LEDS initialisieren
+    FastLED.addLeds<WS2811, WS2811_PIN, RGB>(leds, NUM_LEDS);
 
-  // set them all to be off
-  //fill_solid(leds, NUM_LEDS, CRGB::Black);
+    // alle LEDs ausschalten
+    // fill_solid(leds, NUM_LEDS, CRGB::Black);
 
-  // Headlights and backlights
-  leds[0] = CRGB::Aqua;
-  leds[1] = CRGB::Aqua;
-  leds[2] = CRGB::White;
-  leds[3] = CRGB::White;
-  leds[4] = CRGB::Green;
-  leds[5] = CRGB::Green;
-  leds[6] = CRGB::White;
-  leds[7] = CRGB::Red;
-  leds[8] = CRGB::Blue;
-  leds[9] = CRGB::Blue;
-  leds[10] = CRGB::White;
-  leds[11] = CRGB::White;
+    // verschiedene Farben einstellen
+    leds[0] = CRGB::Aqua;
+    leds[1] = CRGB::Aqua;
+    leds[2] = CRGB::White;
+    leds[3] = CRGB::White;
+    leds[4] = CRGB::Green;
+    leds[5] = CRGB::Green;
+    leds[6] = CRGB::White;
+    leds[7] = CRGB::Red;
+    leds[8] = CRGB::Blue;
+    leds[9] = CRGB::Blue;
+    leds[10] = CRGB::White;
+    leds[11] = CRGB::White;
 
-  FastLED.setBrightness(50);
-  FastLED.show();
+    // Helligkeit
+    FastLED.setBrightness(50);
 
-  delay(500);
-  for (int i=0; i<NUM_LEDS; i++) {
-    leds[i] = CRGB::Black;
+    // Einstellungen setzen
     FastLED.show();
-    delay(50);
-  }
 
-  switch (nMode) {
-    case AUTONOMOUS:
-      leds[1] = CRGB::Red;
-      FastLED.show();
-      delay(500);
-      leds[1] = CRGB::Black;
-      FastLED.show();
-      delay(500);
-      leds[1] = CRGB::Red;
-      FastLED.show();
-      break;
-    case BATTLE:
-      leds[1] = CRGB::Green;
-      FastLED.show();
-      delay(500);
-      leds[1] = CRGB::Black;
-      FastLED.show();
-      delay(500);
-      leds[1] = CRGB::Green;
-      FastLED.show();
-      delay(500);
-      leds[1] = CRGB::Black;
-      FastLED.show();
-      delay(500);
-      leds[1] = CRGB::Green;
-      FastLED.show();
-      break;
-    case MANUAL:
-    default:
-      // set LED color according to joystick position
-      int nJoyHPos = analogRead(JOY_HORIZONTAL_PIN);
-      int nJoyColorValue = map(nJoyHPos, 0, 1023, 0, 255);
-      
-      //leds[0] = CRGB::Blue;
-      //leds[1] = CRGB::Blue;
+    // alle LEDs nacheinander ausschalten
+    delay(500);
+    for (int i=0; i<NUM_LEDS; i++) {
+        leds[i] = CRGB::Black;
+        FastLED.show();
+        delay(50);
+    }
 
-      //Example 1: set color from red, green, and blue components individually
-      leds[0].red = nJoyColorValue;
-      leds[0].green = 255 - nJoyColorValue;
-      leds[0].blue =  150;
-      
-      //Example 2: set color from red, green, and blue components all at once
-      leds[1] = CRGB( nJoyColorValue, 255 - nJoyColorValue, 150);
-      FastLED.show();
-  }
+    // Betriebsmodus mit Farben anzeigen 
+    switch (nMode) {
+        case AUTONOMOUS:
+            leds[1] = CRGB::Red;
+            FastLED.show();
+            delay(500);
+            leds[1] = CRGB::Black;
+            FastLED.show();
+            delay(500);
+            leds[1] = CRGB::Red;
+            FastLED.show();
+            break;
+
+        case BATTLE:
+            leds[1] = CRGB::Green;
+            FastLED.show();
+            delay(500);
+            leds[1] = CRGB::Black;
+            FastLED.show();
+            delay(500);
+            leds[1] = CRGB::Green;
+            FastLED.show();
+            delay(500);
+            leds[1] = CRGB::Black;
+            FastLED.show();
+            delay(500);
+            leds[1] = CRGB::Green;
+            FastLED.show();
+            break;
+
+        case MANUAL:
+        default:
+            // LED Farbe abhängig von der Joystickposition setzen
+            int nJoyHPos = analogRead(JOY_HORIZONTAL_PIN);
+            int nJoyColorValue = map(nJoyHPos, 0, 1023, 0, 255);
+
+            // feste LED Farbe einstellen
+            // leds[0] = CRGB::Blue;
+            // leds[1] = CRGB::Blue;
+
+            // Farben für jeden Kanal einzeln einstellen
+            leds[0].red = nJoyColorValue;
+            leds[0].green = 255 - nJoyColorValue;
+            leds[0].blue =  150;
+
+            // Farben für alle Kanäle gleichzeitig setzen
+            leds[1] = CRGB( nJoyColorValue, 255 - nJoyColorValue, 150);
+
+            FastLED.show();
+    }
 
 // --- END SETUP WS2811 ---
 
