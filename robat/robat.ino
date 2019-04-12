@@ -862,99 +862,91 @@ void doBattle() {
 
 // --- BEGIN FUNCTIONS AVOID_OBSTACLES ---
 
-// depends on MOTOR, SERVO and ULTRASONIC
+// Diese Funktionen sind abhängig von den Abschnitten MOTOR, SERVO und ULTRASONIC
 
+
+/**
+ * Die Funktion versucht, den Roboter so zu steuern, dass er nicht 
+ * gegen Hindernisse prallt.
+ * 
+ */
 void avoidObstacles() {
-  /*
-  // turn about 45 degrees
-  turnRobot(LEFT, 200);
-  delay(1000);
-  turnRobot(RIGHT, 200);
-  delay(1000);
 
-  // turn about 120 degrees
-  turnRobot(LEFT, 500);
-  delay(1000);
-  turnRobot(RIGHT, 500);
-  delay(1000);
+    int nDistance = getDistance(); 
 
-  // turn about 230 degrees
-  turnRobot(LEFT, 1000);
-  delay(1000);
-  turnRobot(RIGHT, 1000);
-  delay(1000);
-  */
+    if (DEBUG) {
+        // Serial.print("Distance to object: ");
+        Serial.println(nDistance);
+    }
 
-  int nDistance = getDistance(); // ultrasonic.distanceRead(CM);
-  if (DEBUG) {
-    // Serial.print("Distance to object: ");
-    Serial.println(nDistance);
-  }
-  // timeOfLastDistanceMeasurement = millis();
+    showDistance(nDistance);
 
-  showDistance(nDistance);
+    int nSpeed = 0;
+    if (digitalRead(BUMPER_PIN) == LOW) {
+        // Zusammenstoß mit Hindernis erkannt. Ausweichen
 
-  int nSpeed = 0;
-  if (digitalRead(BUMPER_PIN) == LOW) {
-    stopMotor(MOTOR_A);
-    stopMotor(MOTOR_B);
-    delay(250);
-    startMotor(MOTOR_A, BACKWARD, 128);
-    startMotor(MOTOR_B, BACKWARD, 128);
-    delay(750);
-    stopMotor(MOTOR_A);
-    delay(250);
-    stopMotor(MOTOR_B);
-  }
-  else if (nDistance > 10) {
-    // forward
-    nSpeed = map(nDistance, 15, 150, 80, 128);
-    startMotor(MOTOR_A, FORWARD, nSpeed);
-    startMotor(MOTOR_B, FORWARD, nSpeed);
-  }
-  else {
-    stopMotor(MOTOR_A);
-    stopMotor(MOTOR_B);
-
-    // make annoyed noise
-    // tweet(TONE_PIN, 1);
-    TimerFreeTone(TONE_PIN, 440, 80);
-    TimerFreeTone(TONE_PIN, 0, 80);
-    TimerFreeTone(TONE_PIN, 220, 200);
-
-    // measure distance in different directions and turn to free direction
-    startServo2(60);
-    delay(DETACH_DELAY_SERVO_2);
-    stopServo2();
-    nDistance = getDistance();
-
-    if (nDistance > 15) {
-      // turn left
-      turnRobot(LEFT, 200);
+        stopMotor(MOTOR_A);
+        stopMotor(MOTOR_B);
+        delay(250);
+        startMotor(MOTOR_A, BACKWARD, 128);
+        startMotor(MOTOR_B, BACKWARD, 128);
+        delay(750);
+        stopMotor(MOTOR_A);
+        delay(250);
+        stopMotor(MOTOR_B);
+    }
+    else if (nDistance > 10) {
+        // ausreichender Abstand zum nächsten Objekt
+        // geradeaus fahren
+        nSpeed = map(nDistance, 15, 150, 80, 128);
+        startMotor(MOTOR_A, FORWARD, nSpeed);
+        startMotor(MOTOR_B, FORWARD, nSpeed);
     }
     else {
-      startServo2(120);
-      delay(DETACH_DELAY_SERVO_2);
-      stopServo2();
-      nDistance = getDistance();
+        // Kollisionsgefahr. Anhalten
+        stopMotor(MOTOR_A);
+        stopMotor(MOTOR_B);
 
-      if (nDistance > 15) {
-        // turn right
-        turnRobot(RIGHT, 200);
-      }
-      else {
-        // turn around
-        turnRobot(RIGHT, 1000);
-      }
+        // ZUstand durch Töne signalisieren
+        TimerFreeTone(TONE_PIN, NOTE_A4, 80);
+        TimerFreeTone(TONE_PIN, NOTE_PAUSE, 80);
+        TimerFreeTone(TONE_PIN, NOTE_A3, 200);
 
+        // Abstand in verschiedene Richtungen messen und in eine freie
+        // Richtung drehen.
+        
+        // links frei?
+        startServo2(60);
+        delay(DETACH_DELAY_SERVO_2);
+        stopServo2();
+        nDistance = getDistance();
+
+        if (nDistance > 15) {
+            // nach links drehen
+            turnRobot(LEFT, 200);
+        }
+        else {
+            // rechts frei?
+            startServo2(120);
+            delay(DETACH_DELAY_SERVO_2);
+            stopServo2();
+            nDistance = getDistance();
+
+            if (nDistance > 15) {
+                // nach rechts drehen
+                turnRobot(RIGHT, 200);
+            }
+            else {
+                // umdrehen
+                turnRobot(RIGHT, 1000);
+            }
+        }
+
+        // Servo mit Ultraschallsensor wieder nach vorne ausrichten
+        startServo2(90);
+        delay(DETACH_DELAY_SERVO_2);
+        stopServo2();
     }
-
-    // set servo to middle position
-    startServo2(90);
-    delay(DETACH_DELAY_SERVO_2);
-    stopServo2();
-  }
-
 }
 
 // --- END FUNCTIONS AVOID_OBSTACLES ---
