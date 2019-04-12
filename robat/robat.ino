@@ -276,6 +276,10 @@ CRGB leds[NUM_LEDS];
 int nMotorSpeed1 = 0;
 int nMotorSpeed2 = 0;
 
+// Vorherige Motorgeschwindigkeiten
+int nPrevMotorSpeed1 = 0;
+int nPrevMotorSpeed2 = 0;
+
 // Maximale Geschwindigkeit der beiden Motoren
 // MAX_SPEED 0..255
 #define MAX_SPEED 196
@@ -287,6 +291,7 @@ int nMotorSpeed2 = 0;
 // Richtungen vorwärts und rückwärts eines Motors
 #define FORWARD 0
 #define BACKWARD 1
+#define STOP 2
 
 // Richtung, in die der Roboter sich dreht
 #define LEFT 0
@@ -328,30 +333,30 @@ int nJoyPosH = 512;
  *
  */
 int getDistance(int nMeasurements = 3) {
-  int nDistanceAvg = 0;
+    int nDistanceAvg = 0;
 
-  int nDistance = 0;
-  int nDistanceSum = 0;
-  int nValidValues = 0; // Anzahl gültiger (positiver) Messwerte
+    int nDistance = 0;
+    int nDistanceSum = 0;
+    int nValidValues = 0; // Anzahl gültiger (positiver) Messwerte
 
-  for (int i = 0; i <= nMeasurements; i++) {
-    nDistance = ultrasonic.read();
-    
-    // Hinweis: in früheren Versionen der Ultrasonic Bibliothek wurde
-    // distanceRead() verwendet:
-    // nDistance = ultrasonic.distanceRead(CM);
+    for (int i = 0; i <= nMeasurements; i++) {
+        nDistance = ultrasonic.read();
 
-    if (nDistance > 0) {
-      nDistanceSum += nDistance;
-      nValidValues++;
+        // Hinweis: in früheren Versionen der Ultrasonic Bibliothek wurde
+        // distanceRead() verwendet:
+        // nDistance = ultrasonic.distanceRead(CM);
+
+        if (nDistance > 0) {
+          nDistanceSum += nDistance;
+          nValidValues++;
+        }
     }
-  }
 
-  if (nValidValues > 0) {
-    nDistanceAvg = floor(nDistanceSum / nValidValues);
-  }
+    if (nValidValues > 0) {
+        nDistanceAvg = floor(nDistanceSum / nValidValues);
+    }
 
-  return nDistanceAvg;
+    return nDistanceAvg;
 }
 
 // --- END FUNCTIONS ULTRASONIC ---
@@ -547,6 +552,40 @@ void moveServoBackForth() {
 // --- BEGIN FUNCTIONS MOTOR ---
 
 /**
+ * Setzt die Drehrichtung der Motoren ohne die Geschwindigkeit zu ändern.
+ * 
+ * @param int nMotor: 0 - motor A, 1 - motor B
+ * @param int nDir: 0 - forward, 1 - backward
+ */
+void setMotorDir(int nMotor, int nDir) {
+    if (MOTOR_A == nMotor) {
+        if (FORWARD == nDir) {
+            // Motor A vorwärts
+            digitalWrite(MOTOR_A_IN1_PIN, HIGH);
+            digitalWrite(MOTOR_A_IN2_PIN, LOW);
+        }
+        else if (BACKWARD == nDir) {
+            // Motor A rückwärts
+            digitalWrite(MOTOR_A_IN1_PIN, LOW);
+            digitalWrite(MOTOR_A_IN2_PIN, HIGH);
+        }
+    }
+    else {
+        if (FORWARD == nDir) {
+            // Motor B vorwärts
+            digitalWrite(MOTOR_B_IN3_PIN, HIGH);
+            digitalWrite(MOTOR_B_IN4_PIN, LOW);
+        }
+        else if (BACKWARD == nDir) {
+            // Motor B rückwärts
+            digitalWrite(MOTOR_B_IN3_PIN, LOW);
+            digitalWrite(MOTOR_B_IN4_PIN, HIGH);
+        }
+    }
+}
+  
+
+/**
  * Einen der beiden Motoren einschalten. 
  *
  * @param int nMotor: Auswahl des Motors, 0 - Motor A, 1 - Motor B
@@ -570,32 +609,14 @@ void startMotor(int nMotor, int nDir, int nSpeed) {
     // Geschwindigkeit auf 0 .. MAX_SPEED begrenzen
     nSpeed = max(0, min(nSpeed, MAX_SPEED));
 
+    setMotorDir(nMotor, nDir);
+
     if (MOTOR_A == nMotor) {
-        if (FORWARD == nDir) {
-            // Motor A vorwärts
-            digitalWrite(MOTOR_A_IN1_PIN, HIGH);
-            digitalWrite(MOTOR_A_IN2_PIN, LOW);
-        }
-        else {
-            // Motor A rückwärts
-            digitalWrite(MOTOR_A_IN1_PIN, LOW);
-            digitalWrite(MOTOR_A_IN2_PIN, HIGH);
-        }
         analogWrite(MOTOR_A_ENABLE_PIN, nSpeed);
     }
     else {
-        if (FORWARD == nDir) {
-            // Motor B vorwärts
-            digitalWrite(MOTOR_B_IN3_PIN, HIGH);
-            digitalWrite(MOTOR_B_IN4_PIN, LOW);
-        }
-        else {
-            // Motor B rückwärts
-            digitalWrite(MOTOR_B_IN3_PIN, LOW);
-            digitalWrite(MOTOR_B_IN4_PIN, HIGH);
-        }
         analogWrite(MOTOR_B_ENABLE_PIN, nSpeed);
-    }
+    }   
 }
 
 
@@ -631,6 +652,110 @@ void stopMotor(int nMotor) {
 
 
 /**
+ * Beide Motoren anhalten
+ *
+ * @param nDir int Richtung, FORWARD | BACKWARD
+ */
+void stopMotors(int nDir) {
+
+    startMotors(nDir, 0, nDir, 0);
+
+    digitalWrite(MOTOR_A_IN1_PIN, LOW);
+    digitalWrite(MOTOR_A_IN2_PIN, LOW);
+    
+    // HIGH, um den Motor auszuschalten, 0 zum Bremsen
+    analogWrite(MOTOR_A_ENABLE_PIN, 0);
+
+    digitalWrite(MOTOR_B_IN3_PIN, LOW);
+    digitalWrite(MOTOR_B_IN4_PIN, LOW);
+    
+    // HIGH, um den Motor auszuschalten, 0 zum Bremsen
+    analogWrite(MOTOR_B_ENABLE_PIN, 0); 
+
+    nPrevMotorSpeed1 = 0;
+    nPrevMotorSpeed2 = 0;
+}
+
+/**
+ * Setzt die Motorgeschwindigkeiten. Dabei wird die Zielgeschwindigkeit 
+ * langsam angesteuert, um den Einschaltstrom zu minimieren.
+ * 
+ * @param int Richtung Motor A
+ * @param int Geschwindigkeit Motor A
+ * @param int Richtung Motor B
+ * @param int Geschwindigkeit Motor B
+ * 
+ * Die Funktion benutzt die globalen Variablen nPrevMotorSpeed1 und nPrevMotorSpeed2
+ */
+void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
+  
+    // Drehrichtungen setzen
+    setMotorDir(MOTOR_A, nDirA);
+    setMotorDir(MOTOR_B, nDirB);
+
+    // MotorSpeed1 und MotorSpeed2 sind die Zielgeschwindigkeiten für
+    // jeden Motor.
+
+    // Die Geschwindigkeit wird mit einer Verzögerung erreicht, um den
+    // Einschaltstrom gering zu halten. Ohne diese Maßnahme kann der 
+    // Einschaltstrom so groß werden, dass die Batterien überlastet 
+    // werden und die Spannung zusammenbricht. In der Folge startet
+    // der Arduino neu.
+      
+    // nPrevMotorSpeed1 und nPrevMotorSpeed2 speichern die vorherige Geschwindigkeit
+    // der beiden Motoren. Diese kann kleiner, größer oder gleich der 
+    // gewünschten Zielgeschwindigkeit sein.
+
+    // nDelay hängt von der Differenz zwischen aktueller und Zielgeschwindigkeit
+    // ab.
+    
+    int nDelay = 0;
+    int nDiffA = abs(nSpeedA - nPrevMotorSpeed1);
+    int nDiffB = abs(nSpeedB - nPrevMotorSpeed2);
+    if ((nDiffA > 50) || (nDiffB > 50)) {
+        nDelay = 1;
+    }
+    else if ((nDiffA > 120) || (nDiffB > 120)) {
+        nDelay = 2;
+    }
+    else if ((nDiffA > 180) || (nDiffB > 180)) {
+        nDelay = 3;
+    }
+    else {
+        nDelay = 4;
+    }
+
+    int nCurMotorSpeed1 = nPrevMotorSpeed1;
+    int nCurMotorSpeed2 = nPrevMotorSpeed2;
+
+    while ((nCurMotorSpeed1 != nSpeedA) || (nCurMotorSpeed2 != nSpeedB)) {
+        if (nCurMotorSpeed1 > nSpeedA) {
+            nCurMotorSpeed1--;
+        }
+        if (nCurMotorSpeed1 < nSpeedA) {
+            nCurMotorSpeed1++;
+        }
+        if (nCurMotorSpeed2 > nSpeedB) {
+            nCurMotorSpeed2--;
+        }
+        if (nCurMotorSpeed2 < nSpeedB) {
+            nCurMotorSpeed2++;
+        }
+        analogWrite(MOTOR_A_ENABLE_PIN, nCurMotorSpeed1);
+        analogWrite(MOTOR_B_ENABLE_PIN, nCurMotorSpeed2);
+
+        // warten
+        delay(nDelay);
+    }
+
+    delay(20);
+
+    nPrevMotorSpeed1 = nCurMotorSpeed1;
+    nPrevMotorSpeed2 = nCurMotorSpeed2;
+}
+
+
+/**
  * Dreht den Roboter nach links oder rechts, indem ein Motor für nDelay 
  * Millisekunden vorwärts und der andere rückwärts gedreht wird.
  *
@@ -639,15 +764,17 @@ void stopMotor(int nMotor) {
  *
  */
 void turnRobot(int nDir, int nDelay) {
+    stopMotor(MOTOR_A);
+    stopMotor(MOTOR_B);
+    delay(100);
+
     int nSpeed = 128;
 
     if (LEFT == nDir) {
-        startMotor(MOTOR_A, FORWARD, nSpeed);
-        startMotor(MOTOR_B, BACKWARD, nSpeed);
+        startMotors(FORWARD, nSpeed, BACKWARD, nSpeed);
     }
     else {
-        startMotor(MOTOR_A, BACKWARD, nSpeed);
-        startMotor(MOTOR_B, FORWARD, nSpeed);
+        startMotors(BACKWARD, nSpeed, FORWARD, nSpeed);
     }
 
     delay(nDelay); 
@@ -796,9 +923,8 @@ void doBattle() {
             
             nAttackCounter++; // Anzahl durchgeführter Angriffe
       
-            nSpeed = 180; // volle Kraft voraus
-            startMotor(MOTOR_A, FORWARD, nSpeed);
-            startMotor(MOTOR_B, FORWARD, nSpeed);
+            nSpeed = MAX_SPEED; // volle Kraft voraus
+            startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(1000);
       
             stopMotor(MOTOR_A);
@@ -828,8 +954,7 @@ void doBattle() {
             // Zurückweichen
 
             nSpeed = 100;
-            startMotor(MOTOR_A, BACKWARD, nSpeed);
-            startMotor(MOTOR_B, BACKWARD, nSpeed);
+            startMotors(BACKWARD, nSpeed, BACKWARD, nSpeed);
             delay(800);
             stopMotor(MOTOR_A);
             stopMotor(MOTOR_B);
@@ -844,8 +969,7 @@ void doBattle() {
             timeOfLastDistanceMeasurement = millis();
             
             nSpeed = 80;
-            startMotor(MOTOR_A, FORWARD, nSpeed);
-            startMotor(MOTOR_B, FORWARD, nSpeed);
+            startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
 
             nBattleState = 7;
             break;
@@ -909,8 +1033,7 @@ void avoidObstacles() {
         stopMotor(MOTOR_A);
         stopMotor(MOTOR_B);
         delay(250);
-        startMotor(MOTOR_A, BACKWARD, 128);
-        startMotor(MOTOR_B, BACKWARD, 128);
+        startMotors(BACKWARD, 128, BACKWARD, 128); 
         delay(750);
         stopMotor(MOTOR_A);
         delay(250);
@@ -920,15 +1043,14 @@ void avoidObstacles() {
         // ausreichender Abstand zum nächsten Objekt
         // geradeaus fahren
         nSpeed = map(nDistance, 15, 150, 80, 128);
-        startMotor(MOTOR_A, FORWARD, nSpeed);
-        startMotor(MOTOR_B, FORWARD, nSpeed);
+        startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
     }
     else {
         // Kollisionsgefahr. Anhalten
         stopMotor(MOTOR_A);
         stopMotor(MOTOR_B);
 
-        // ZUstand durch Töne signalisieren
+        // Zustand durch Töne signalisieren
         TimerFreeTone(TONE_PIN, NOTE_A4, 80);
         TimerFreeTone(TONE_PIN, NOTE_PAUSE, 80);
         TimerFreeTone(TONE_PIN, NOTE_A3, 200);
@@ -995,6 +1117,8 @@ void manualControl() {
     // weichen die Werte davon ab. Wir definieren deshalb alle Werte
     // zwischen JOY_MIDDLE_MIN und JOY_MIDDLE_MAX als Mittelstellung.
 
+    int nMotorDir = STOP; // default
+
     // Wird der Joystick nach hinten gedrückt (nJoyPosV < JOY_MIDDLE_MIN),
     // soll sich der Roboter rückwärts bewegen. WIrd der Joystick nach
     // vorne gedrückt (nJoyPosV > JOY_MIDDLE_MAX), bewegt sich der Roboter 
@@ -1002,14 +1126,7 @@ void manualControl() {
 
     if (nJoyPosV < JOY_MIDDLE_MIN) {
         // rückwärts
-
-        // Motor A rückwärts
-        digitalWrite(MOTOR_A_IN1_PIN, LOW);
-        digitalWrite(MOTOR_A_IN2_PIN, HIGH);
-
-        // Motor B rückwärts
-        digitalWrite(MOTOR_B_IN3_PIN, LOW);
-        digitalWrite(MOTOR_B_IN4_PIN, HIGH);
+        nMotorDir = BACKWARD;
 
         // Motorgeschwindigkeit ist abhängig davon, wie weit der Joystick
         // gedrückt wird.
@@ -1024,14 +1141,7 @@ void manualControl() {
     }
     else if (nJoyPosV > JOY_MIDDLE_MAX) {
         // vorwärts
-
-        // Motor A vorwärts
-        digitalWrite(MOTOR_A_IN1_PIN, HIGH);
-        digitalWrite(MOTOR_A_IN2_PIN, LOW);
-
-        // Motor B vorwärts
-        digitalWrite(MOTOR_B_IN3_PIN, HIGH);
-        digitalWrite(MOTOR_B_IN4_PIN, LOW);
+        nMotorDir = FORWARD;
 
         // Motorgeschwindigkeit ermitteln
         nMotorSpeed1 = map(nJoyPosV, JOY_MIDDLE_MAX, 1023, 0, MAX_SPEED);
@@ -1099,17 +1209,34 @@ void manualControl() {
     // bei sehr niedrigen Motorgeschwindigkeiten laufen die Motoren 
     // nicht an, manchmal entsteht ein summendes Geräusch. Das wird hier
     // unterdrückt.
-    
+
+    // Motorgeschwindigkeit mit den LEDs anzeigen
     if (nMotorSpeed1 < 8) {
         nMotorSpeed1 = 0;
     }
     if (nMotorSpeed2 < 8) {
         nMotorSpeed2 = 0;
     }
+    if ((nMotorSpeed1 == 0) || (nMotorSpeed2 == 0)) {
+        leds[0] = CRGB::White;
+        leds[1] = CRGB::White;
+    }
+    else if (FORWARD == nMotorDir) {
+        leds[0] = CRGB::Blue;
+        leds[1] = CRGB::Blue;
+    }
+    else if (BACKWARD == nMotorDir) {
+        leds[0] = CRGB::Green;
+        leds[1] = CRGB::Green;
+    }
+
+    FastLED.show();
 
     // Motorgeschwindigkeiten setzen    
-    analogWrite(MOTOR_A_ENABLE_PIN, nMotorSpeed1);
-    analogWrite(MOTOR_B_ENABLE_PIN, nMotorSpeed2);
+    
+    // startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB);
+    startMotors(nMotorDir, nMotorSpeed1, nMotorDir, nMotorSpeed2);
+
 }
 
 // --- END FUNCTIONS MANUAL_CONTROL ---
@@ -1220,10 +1347,17 @@ void setup() {
     // Abstand < 10cm: MANUAL
     // Abstand >= 10cm und <= 30cm: Hindernisvermeidung
     // Abstand > 30cm: Battle-Modus
-    
-    int nDistance = getDistance(); // ultrasonic.distanceRead(CM);
 
-    if (nDistance < 10) {
+    // falls der Joystick Button beim Einschalten gedrückt wird, ist der 
+    // Modus ebenfalls MANUAL    
+    
+    int nDistance = getDistance(); 
+    int bButtonPressed = digitalRead(BUMPER_PIN);
+
+    if (LOW == bButtonPressed) {
+        nMode = MANUAL; 
+    }
+    else if (nDistance < 10) {
         nMode = MANUAL;
     }
     else if (nDistance < 30) {
@@ -1233,11 +1367,6 @@ void setup() {
         nMode = BATTLE;
     }
 
-    // falls der Joystick Button beim Einschalten gedrückt wird, ist der 
-    // Modus ebenfalls MANUAL    
-    if (digitalRead(BUMPER_PIN) == LOW) {
-        nMode = MANUAL;
-    }
 
 // --- BEGIN SETUP AUTOMANUAL ---
 
@@ -1335,6 +1464,7 @@ void setup() {
 
 
 // --- BEGIN SETUP JOYSTICK ---
+
     // Das Setzen der Pins für den Joystick auf den Default INPUT 
     // stört die Ansteuerung der Motoren, daher auf Default lassen.
 
