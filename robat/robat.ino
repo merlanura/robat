@@ -764,8 +764,7 @@ void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
  *
  */
 void turnRobot(int nDir, int nDelay) {
-    stopMotor(MOTOR_A);
-    stopMotor(MOTOR_B);
+    stopMotors();
     delay(100);
 
     int nSpeed = 128;
@@ -778,8 +777,7 @@ void turnRobot(int nDir, int nDelay) {
     }
 
     delay(nDelay); 
-    stopMotor(MOTOR_A);
-    stopMotor(MOTOR_B);
+    stopMotors();
 }
 
 // --- END FUNCTIONS MOTOR ---
@@ -927,8 +925,7 @@ void doBattle() {
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(1000);
       
-            stopMotor(MOTOR_A);
-            stopMotor(MOTOR_B);
+            stopMotors();
 
             if (1 == nAttackCounter) {
                 // beim ersten Angriff nur vorwärts fahren
@@ -956,8 +953,8 @@ void doBattle() {
             nSpeed = 100;
             startMotors(BACKWARD, nSpeed, BACKWARD, nSpeed);
             delay(800);
-            stopMotor(MOTOR_A);
-            stopMotor(MOTOR_B);
+            
+            stopMotors();
 
             nBattleState = 0;
             break;
@@ -976,9 +973,8 @@ void doBattle() {
 
         case 6:
             // Stop
-            
-            stopMotor(MOTOR_A);
-            stopMotor(MOTOR_B);
+            stopMotors();
+
             break;
 
         case 7:
@@ -994,8 +990,7 @@ void doBattle() {
             // Zustandsübergang, wenn "lange" kein Gegner gesehen wurde
             if (millis() - timeOfLastDistanceMeasurement > 1000) {
                 // anhalten und erneut nach Gegnern suchen
-                stopMotor(MOTOR_A);
-                stopMotor(MOTOR_B);
+                stopMotors();
 
                 nBattleState = 0;
             }
@@ -1030,8 +1025,8 @@ void avoidObstacles() {
     if (digitalRead(BUMPER_PIN) == LOW) {
         // Zusammenstoß mit Hindernis erkannt. Ausweichen
 
-        stopMotor(MOTOR_A);
-        stopMotor(MOTOR_B);
+        stopMotors();
+
         delay(250);
         startMotors(BACKWARD, 128, BACKWARD, 128); 
         delay(750);
@@ -1047,8 +1042,7 @@ void avoidObstacles() {
     }
     else {
         // Kollisionsgefahr. Anhalten
-        stopMotor(MOTOR_A);
-        stopMotor(MOTOR_B);
+        stopMotors();
 
         // Zustand durch Töne signalisieren
         TimerFreeTone(TONE_PIN, NOTE_A4, 80);
