@@ -1079,7 +1079,7 @@ void manualControl() {
         }
     }
 
-    // bei sehr niedrigen Moitorgeschwindigkeiten laufen die Motoren 
+    // bei sehr niedrigen Motorgeschwindigkeiten laufen die Motoren 
     // nicht an, manchmal entsteht ein summendes Geräusch. Das wird hier
     // unterdrückt.
     
@@ -1102,145 +1102,125 @@ void setup() {
 
 // --- BEGIN SETUP GENERAL ---
 
-  // send print statements at 9600 baud
-  Serial.begin(115200);
+    // Serielle Schnittstelle konfigurieren
+    Serial.begin(115200);
 
 // --- END SETUP GENERAL ---
 
 
 // --- BEGIN SETUP BUMPER ---
 
-  pinMode(BUMPER_PIN, INPUT_PULLUP);
+    // Kollisionserkennung
+    pinMode(BUMPER_PIN, INPUT_PULLUP);
 
 // --- END SETUP BUMPER ---
 
 
 // --- BEGIN SETUP SERVO ---
-  pinMode(SERVO_1_PIN, OUTPUT);
-  pinMode(SERVO_2_PIN, OUTPUT);
 
-  // check servos
-  startServo2(90);
-  startServo1(90);
-  delay(500);
-  stopServo2();
-  startServo2(45);
-  stopServo1();
-  startServo1(45);
-  delay(500);
-  stopServo2();
-  startServo2(135);
-  stopServo1();
-  startServo1(135);
-  delay(500);
-  stopServo2();
-  stopServo1();
+    pinMode(SERVO_1_PIN, OUTPUT);
+    pinMode(SERVO_2_PIN, OUTPUT);
 
-  delay(500);
-  startServo2(90);
-  startServo1(90);
-  delay(500);
-  stopServo2();
-  stopServo1();
+    // Servos beim Start hin und her bewegen (Funktionstest)
+    
+    startServo2(90);
+    startServo1(90);
+    delay(500);
+    stopServo2();
+    startServo2(45);
+    stopServo1();
+    startServo1(45);
+    delay(500);
+    stopServo2();
+    startServo2(135);
+    stopServo1();
+    startServo1(135);
+    delay(500);
+    stopServo2();
+    stopServo1();
 
-  targetPositionServo2 = 90;
-  actualPositionServo2 = 90;
-  targetPositionServo1 = 90;
-  actualPositionServo1 = 90;
+    // in Mittelstellung ausrichten
+    delay(500);
+    startServo2(90);
+    startServo1(90);
+    delay(500);
+    stopServo2();
+    stopServo1();
 
-  /*
-  startServo1(90);
-  delay(500);
-  stopServo1();
-  startServo1(45);
-  delay(500);
-  stopServo1();
-  startServo1(135);
-  delay(500);
-  stopServo1();
-  targetPositionServo1 = 0;
-  actualPositionServo1 = 0;
-  */
-
-  /*
-  int val = 0;
-
-  servo2.attach(SERVO_2_PIN);
-  bAttachedServo2 = true;
-  val = 0;
-  servo2.write(SERVO_2_MAX + (SERVO_2_MIN - SERVO_2_MAX) / 100 * val); // sets the servo position 0-180
-  delay(500);
-  val = 90;
-  servo2.write(SERVO_2_MAX + (SERVO_2_MIN - SERVO_2_MAX) / 100 * val); // sets the servo position 0-180
-  delay(500);
-  val = 180;
-  servo2.write(SERVO_2_MAX + (SERVO_2_MIN - SERVO_2_MAX) / 100 * val); // sets the servo position 0-180
-  delay(500);
-  servo2.detach();
-  bAttachedServo2 = false;
-  */
+    targetPositionServo2 = 90;
+    actualPositionServo2 = 90;
+    targetPositionServo1 = 90;
+    actualPositionServo1 = 90;
 
 // --- END SETUP SERVO ---
 
 
-
 // --- BEGIN SETUP BUZZER ---
 
-  for (int thisNote = 0; thisNote < melody_length; thisNote++) { // Loop through the notes in the array.
-    TimerFreeTone(TONE_PIN, melody[thisNote], duration[thisNote]); // Play thisNote for duration.
-    delay(50); // Short delay between notes.
-  }
+    // Startmelodie abspielen
+    for (int thisNote = 0; thisNote < melody_length; thisNote++) { // alle Noten im Array durchlaufen
+        TimerFreeTone(TONE_PIN, melody[thisNote], duration[thisNote]); // Note abspielen
+        delay(50); // kurze Pause zwischen den Noten
+    }
 
 // --- END SETUP BUZZER ---
 
 
 // --- BEGIN SETUP MOTOR ---
 
-  // Set all the motor control pins to outputs
-  pinMode(MOTOR_A_ENABLE_PIN, OUTPUT);
-  pinMode(MOTOR_B_ENABLE_PIN, OUTPUT);
-  pinMode(MOTOR_A_IN1_PIN, OUTPUT);
-  pinMode(MOTOR_A_IN2_PIN, OUTPUT);
-  pinMode(MOTOR_B_IN3_PIN, OUTPUT);
-  pinMode(MOTOR_B_IN4_PIN, OUTPUT);
+    // Pins für die Motorkontrolle als OUTPUT definieren
+    pinMode(MOTOR_A_ENABLE_PIN, OUTPUT);
+    pinMode(MOTOR_B_ENABLE_PIN, OUTPUT);
+    pinMode(MOTOR_A_IN1_PIN, OUTPUT);
+    pinMode(MOTOR_A_IN2_PIN, OUTPUT);
+    pinMode(MOTOR_B_IN3_PIN, OUTPUT);
+    pinMode(MOTOR_B_IN4_PIN, OUTPUT);
 
-  pinMode(MOTOR_STANDBY_PIN, OUTPUT);
+    pinMode(MOTOR_STANDBY_PIN, OUTPUT);
 
-  // enable motor driver
-  digitalWrite(MOTOR_STANDBY_PIN, HIGH);
+    // Motor Treiber einschalten
+    digitalWrite(MOTOR_STANDBY_PIN, HIGH);
 
-  // Start with motors disabled and direction forward
+    // Motoren aus und Richtung auf vorwärts einstellen
 
-  // Motor A
-  digitalWrite(MOTOR_A_ENABLE_PIN, LOW);
-  digitalWrite(MOTOR_A_IN1_PIN, HIGH);
-  digitalWrite(MOTOR_A_IN2_PIN, LOW);
+    // Motor A
+    digitalWrite(MOTOR_A_ENABLE_PIN, LOW);
+    digitalWrite(MOTOR_A_IN1_PIN, HIGH);
+    digitalWrite(MOTOR_A_IN2_PIN, LOW);
 
-  // Motor B
-  digitalWrite(MOTOR_B_ENABLE_PIN, LOW);
-  digitalWrite(MOTOR_B_IN3_PIN, HIGH);
-  digitalWrite(MOTOR_B_IN4_PIN, LOW);
+    // Motor B
+    digitalWrite(MOTOR_B_ENABLE_PIN, LOW);
+    digitalWrite(MOTOR_B_IN3_PIN, HIGH);
+    digitalWrite(MOTOR_B_IN4_PIN, LOW);
 
 // --- END SETUP MOTOR ---
 
 
 // --- BEGIN SETUP AUTOMANUAL ---
 
-  int nDistance = getDistance(); // ultrasonic.distanceRead(CM);
+    // Betriebsmodus über den Abstand zum nächsten Objekt bestimmen
+    
+    // Abstand < 10cm: MANUAL
+    // Abstand >= 10cm und <= 30cm: Hindernisvermeidung
+    // Abstand > 30cm: Battle-Modus
+    
+    int nDistance = getDistance(); // ultrasonic.distanceRead(CM);
 
-  if (nDistance < 10) {
-    nMode = MANUAL;
-  }
-  else if (nDistance < 30) {
-    nMode = AUTONOMOUS;
-  }
-  else {
-    nMode = BATTLE;
-  }
+    if (nDistance < 10) {
+        nMode = MANUAL;
+    }
+    else if (nDistance < 30) {
+        nMode = AUTONOMOUS;
+    }
+    else {
+        nMode = BATTLE;
+    }
 
-//if (digitalRead(BUMPER_PIN) == LOW) {
-//  nMode = MANUAL;
-//}
+    // falls der Joystick Button beim Einschalten gedrückt wird, ist der 
+    // Modus ebenfalls MANUAL    
+    if (digitalRead(BUMPER_PIN) == LOW) {
+        nMode = MANUAL;
+    }
 
 // --- BEGIN SETUP AUTOMANUAL ---
 
