@@ -1318,9 +1318,11 @@ void setup() {
 
 
 // --- BEGIN SETUP JOYSTICK ---
-  // don't do this as it somehow disturbs the timer for PWM 
-  //pinMode(joyVert, INPUT);
-  //pinMode(joyHorz, INPUT);
+    // Das Setzen der Pins für den Joystick auf den Default INPUT 
+    // stört die Ansteuerung der Motoren, daher auf Default lassen.
+
+    // pinMode(joyVert, INPUT);
+    // pinMode(joyHorz, INPUT);
 
 // --- END SETUP JOYSTICK ---
 
@@ -1330,75 +1332,31 @@ void loop() {
 
 // --- BEGIN LOOP MOTOR ---
 
-  switch (nMode) {
-    case AUTONOMOUS:
-      avoidObstacles();
-      break;
-    case BATTLE:
-      doBattle();
-      break;
-    case MANUAL:
-    default:
-      manualControl();
-  }
+    // Handlung entsprechend dem Betriebsmodus ausführen
+    
+    switch (nMode) {
+        case AUTONOMOUS:
+            avoidObstacles();
+            break;
+
+        case BATTLE:
+            doBattle();
+            break;
+
+        case MANUAL:
+            default:
+            manualControl();
+    }
 
 // --- END LOOP MOTOR ---
 
-// --- BEGIN LOOP WS2811 ---
-    /*
-    // how bright to make this LED from 0 to 1, this is what makes them fade in and out
-    // it calculates what percent we are completed with the letter, and makes it fade in from 0-50% and fade out from 50-100%
-    // the formula can be visualized here: https://www.desmos.com/calculator/5qk8imeny4
-    float brightness = 1-abs((2*(elapsed%millis_per_letter)/((float)millis_per_letter))-1);
-    uint8_t value = 255 * brightness;
-    */
-
-    // get a rotation of colors, so that every NUM_COLORS lights, it loops
-    // e.g. red, yellow, green, blue, red, yellow green blue
-    // uint8_t hue = (letter_index%num_colors*255)/num_colors;
-
-/*
-    // set that LED to the color
-    //leds[led] = CHSV(hue, 255, value);
-    uint8_t hue = 0;
-    uint8_t brightness = 255;
-    for (int i=0; i < NUM_LEDS; i++) {
-
-        //hue = (i % num_colors*255) / num_colors;
-        hue = (random(0, NUM_LEDS) % num_colors*255) / num_colors;
-        leds[i] = CHSV(hue, 255, brightness);
-        FastLED.show();
-    }
-*/
-    // set it to black so we don't have to remember the last LED we turned on
-    // leds[led] = CRGB::Black;
-// --- END LOOP WS2811 ---
 
 // --- BEGIN LOOP SERVO ---
-  moveServoBackForth();
+    
+    // Servo 1 hin und her bewegen
+    moveServoBackForth();
+
 // --- END LOOP SERVO ---
-
-// --- BEGIN LOOP ULTRASONIC ---
-/*
-  if (bMeasureDistance && millis() - timeOfLastDistanceMeasurement > DISTANCE_DELAY) {
-
-    // measuring causes a delay of 692 ms
-    int nDistance = ultrasonic.distanceRead(CM);
-    if (DEBUG) {
-      Serial.print("Distance to object: ");
-      Serial.println(nDistance);
-    }
-    timeOfLastDistanceMeasurement = millis();
-
-    // set LEDs to show distance
-    leds[6] = CRGB::Red; // green
-    leds[7] = CRGB::Red; // green
-    leds[8] = CRGB::Red; // green
-    FastLED.show();
-
-  }
-*/
-// --- END LOOP ULTRASONIC ---
 
 
 }
