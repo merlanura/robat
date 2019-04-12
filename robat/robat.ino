@@ -276,33 +276,15 @@ CRGB leds[NUM_LEDS];
 int nMotorSpeed1 = 0;
 int nMotorSpeed2 = 0;
 
-<<<<<<< HEAD
-// Previous Motor Speed Values - Start at zero
-int PrevMotorSpeed1 = 0;
-int PrevMotorSpeed2 = 0;
-
-=======
 // Vorherige Motorgeschwindigkeiten
 int nPrevMotorSpeed1 = 0;
 int nPrevMotorSpeed2 = 0;
 
 // Maximale Geschwindigkeit der beiden Motoren
->>>>>>> refactor
 // MAX_SPEED 0..255
-#define MAX_SPEED 200
+#define MAX_SPEED 196
 
-// Motor start delay prevents the voltage drop when starting
-// the motors.
-// The unit is ms. The actual time for the motors to speed up from
-// zero to MAX_SPEED is MOTOR_START_DELAY * MAX_SPEED ms.
-#define MOTOR_START_DELAY 1
-
-<<<<<<< HEAD
-// 
-// motor A / B, aka left / right
-=======
 // Motor A / B (linker Motor / rechter Motor)
->>>>>>> refactor
 #define MOTOR_A 0
 #define MOTOR_B 1
 
@@ -570,53 +552,8 @@ void moveServoBackForth() {
 // --- BEGIN FUNCTIONS MOTOR ---
 
 /**
-<<<<<<< HEAD
- * Setzt die Drehrichtung der Motoren
- * 
- * @param int nMotor: 0 - motor A, 1 - motor B
- * @param int nDir: 0 - forward, 1 - backward
- */
-void setMotorDir(int nMotor, int nDir) {
-  if (MOTOR_A == nMotor) {
-    if (FORWARD == nDir) {
-      // motor A forward
-      // Set Motor A forward
-      digitalWrite(in1, HIGH);
-      digitalWrite(in2, LOW);
-    }
-    else if (BACKWARD == nDir) {
-      // motor A backward
-      // Set Motor A backward
-      digitalWrite(in1, LOW);
-      digitalWrite(in2, HIGH);
-    }
-    // analogWrite(enA, nSpeed);
-  }
-  else {
-    if (FORWARD == nDir) {
-      // motor B forward
-      // Set Motor B forward
-      digitalWrite(in3, HIGH);
-      digitalWrite(in4, LOW);
-    }
-    else if (BACKWARD == nDir) {
-      // motor B backward
-      // Set Motor B backward
-      digitalWrite(in3, LOW);
-      digitalWrite(in4, HIGH);
-    }
-    // analogWrite(enB, nSpeed);
-  }
-}
-  
-
-/**
- * Start motor
- *
-=======
  * Setzt die Drehrichtung der Motoren ohne die Geschwindigkeit zu ändern.
  * 
->>>>>>> refactor
  * @param int nMotor: 0 - motor A, 1 - motor B
  * @param int nDir: 0 - forward, 1 - backward
  */
@@ -658,38 +595,6 @@ void setMotorDir(int nMotor, int nDir) {
  */
 void startMotor(int nMotor, int nDir, int nSpeed) {
 
-<<<<<<< HEAD
-  if (DEBUG) {
-    Serial.print(millis());
-    Serial.print(", ");
-    Serial.print("Starting motor ");
-    Serial.print(nMotor);
-    Serial.print(", dir: ");
-    Serial.print(nDir);
-    Serial.print(", speed: ");
-    Serial.println(nSpeed);
-  }
-  
-  // limit speed to 0 .. MAX_SPEED
-  nSpeed = max(0, min(nSpeed, MAX_SPEED));
-
-  setMotorDir(nMotor, nDir);
-
-  if (MOTOR_A == nMotor) {
-    analogWrite(enA, nSpeed);
-  }
-  else {
-    analogWrite(enB, nSpeed);
-  } 
-     
-  /*
-  if (MOTOR_A == nMotor) {
-    if (FORWARD == nDir) {
-      // motor A forward
-      // Set Motor A forward
-      digitalWrite(in1, HIGH);
-      digitalWrite(in2, LOW);
-=======
     if (DEBUG) {
         Serial.print(millis());
         Serial.print(", ");
@@ -708,7 +613,6 @@ void startMotor(int nMotor, int nDir, int nSpeed) {
 
     if (MOTOR_A == nMotor) {
         analogWrite(MOTOR_A_ENABLE_PIN, nSpeed);
->>>>>>> refactor
     }
     else {
         analogWrite(MOTOR_B_ENABLE_PIN, nSpeed);
@@ -744,22 +648,11 @@ void stopMotor(int nMotor) {
         // HIGH, um den Motor auszuschalten, 0 zum Bremsen
         analogWrite(MOTOR_B_ENABLE_PIN, 0); 
     }
-<<<<<<< HEAD
-    analogWrite(enB, nSpeed);
-  }
-  */
-  
-=======
->>>>>>> refactor
 }
 
 
 /**
-<<<<<<< HEAD
- * Stop motor
-=======
  * Beide Motoren anhalten
->>>>>>> refactor
  *
  * @param nDir int Richtung, FORWARD | BACKWARD
  */
@@ -796,122 +689,6 @@ void stopMotors(int nDir) {
  */
 void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
   
-<<<<<<< HEAD
-  if (MOTOR_A == nMotor) {
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, LOW);
-    analogWrite(enA, 0); // set high to switch motor off, 0 for short brake
-  }
-  else {
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, LOW);
-    analogWrite(enB, 0); // set high to switch motor off, 0 for short brake
-  }
-
-  PrevMotorSpeed1 = 0;
-  PrevMotorSpeed2 = 0;
-}
-
-
-/**
- * Stop motor
- *
- * @param nDir int Richtung, FORWARD | BACKWARD
- */
-void stopMotors(int nDir) {
-
-  startMotors(nDir, 0, nDir, 0);
-    
-  digitalWrite(in1, LOW);
-  digitalWrite(in2, LOW);
-  analogWrite(enA, 0); // set high to switch motor off, 0 for short brake
-
-  digitalWrite(in3, LOW);
-  digitalWrite(in4, LOW);
-  analogWrite(enB, 0); // set high to switch motor off, 0 for short brake
-
-  PrevMotorSpeed1 = 0;
-  PrevMotorSpeed2 = 0;
-}
-
-/**
- * Set the motor speeds
- * 
- * @param int Richtung Motor A
- * @param int Geschwindigkeit Motor A
- * @param int Richtung Motor B
- * @param int Geschwindigkeit Motor B
- * 
- * Die Funktion benutzt die globalen Variablen PrevMotorSpeed1 und PrevMotorSpeed2
- */
-void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
-  
-  // set motor direction
-  setMotorDir(MOTOR_A, nDirA);
-  setMotorDir(MOTOR_B, nDirB);
-  
-  // Set the motor speeds
-
-  // start motors slowly so they don't draw too much current as the voltage
-  // drop might cause the Arduino to reset
-
-  // MotorSpeed1 and MotorSpeed2 are the target speeds of each motor
-  
-  //analogWrite(enA, MotorSpeed1);
-  //analogWrite(enB, MotorSpeed2);
-
-  // change speed slowly
-  // PrevMotorSpeed1 and PrevMotorSpeed2 represent the previously set speed 
-  // of each motor. This can be less than, equal or greater than the new
-  // motor speed.
-
-  // the delay depends on the difference between previous speed
-  // and target speed.
-
-  int nDelay = 0;
-  int nDiffA = abs(nSpeedA - PrevMotorSpeed1);
-  int nDiffB = abs(nSpeedB - PrevMotorSpeed2);
-  if ((nDiffA > 50) || (nDiffB > 50)) {
-     nDelay = 1;
-  }
-  else if ((nDiffA > 120) || (nDiffB > 120)) {
-     nDelay = 2;
-  }
-  else if ((nDiffA > 180) || (nDiffB > 180)) {
-     nDelay = 3;
-  }
-  else {
-    nDelay = 4;
-  }
-  
-  int nCurMotorSpeed1 = PrevMotorSpeed1;
-  int nCurMotorSpeed2 = PrevMotorSpeed2;
-  while ((nCurMotorSpeed1 != nSpeedA) || (nCurMotorSpeed2 != nSpeedB)) {
-    if (nCurMotorSpeed1 > nSpeedA) {
-      nCurMotorSpeed1--;
-    }
-    if (nCurMotorSpeed1 < nSpeedA) {
-      nCurMotorSpeed1++;
-    }
-    if (nCurMotorSpeed2 > nSpeedB) {
-      nCurMotorSpeed2--;
-    }
-    if (nCurMotorSpeed2 < nSpeedB) {
-      nCurMotorSpeed2++;
-    }
-    analogWrite(enA, nCurMotorSpeed1);
-    analogWrite(enB, nCurMotorSpeed2);
-
-    // wait some time
-    //delay(MOTOR_START_DELAY);
-    delay(nDelay);
-  }
-
-  delay(20);
-  
-  PrevMotorSpeed1 = nCurMotorSpeed1;
-  PrevMotorSpeed2 = nCurMotorSpeed2;
-=======
     // Drehrichtungen setzen
     setMotorDir(MOTOR_A, nDirA);
     setMotorDir(MOTOR_B, nDirB);
@@ -975,7 +752,6 @@ void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
 
     nPrevMotorSpeed1 = nCurMotorSpeed1;
     nPrevMotorSpeed2 = nCurMotorSpeed2;
->>>>>>> refactor
 }
 
 
@@ -988,29 +764,6 @@ void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
  *
  */
 void turnRobot(int nDir, int nDelay) {
-<<<<<<< HEAD
-  stopMotor(MOTOR_A);
-  stopMotor(MOTOR_B);
-  delay(100);
-  int nSpeed = 128;
-  if (LEFT == nDir) {
-    /*
-    startMotor(MOTOR_A, FORWARD, nSpeed);
-    startMotor(MOTOR_B, BACKWARD, nSpeed);
-    */
-    startMotors(FORWARD, nSpeed, BACKWARD, nSpeed);
-  }
-  else {
-    /*
-    startMotor(MOTOR_A, BACKWARD, nSpeed);
-    startMotor(MOTOR_B, FORWARD, nSpeed);
-    */
-    startMotors(BACKWARD, nSpeed, FORWARD, nSpeed);
-  }
-  delay(nDelay); // TODO: replace by non-blocking control
-  stopMotor(MOTOR_A);
-  stopMotor(MOTOR_B);
-=======
     stopMotor(MOTOR_A);
     stopMotor(MOTOR_B);
     delay(100);
@@ -1027,7 +780,6 @@ void turnRobot(int nDir, int nDelay) {
     delay(nDelay); 
     stopMotor(MOTOR_A);
     stopMotor(MOTOR_B);
->>>>>>> refactor
 }
 
 // --- END FUNCTIONS MOTOR ---
@@ -1106,88 +858,6 @@ int getDirectionOfNearestObject(int nMaxDistance = 100) {
  * 
  */
 void doBattle() {
-<<<<<<< HEAD
-  int nDistance = getDistance(); // ultrasonic.distanceRead(CM);
-  int nAngleOfOpponent = 90;
-  int nSpeed = 0;
-
-  if (DEBUG) {
-    Serial.print("distance to object: ");
-    Serial.print(nDistance);
-    Serial.print(", ");
-    Serial.print("battle state: ");
-    Serial.println(nBattleState);
-    
-  }
-
-  // Entfernung mit LEDs anzeigen
-  showDistance(nDistance);
-
-  // set battle state
-
-  // Entfernung zum Ziel < 30cm? Dann Attacke
-  // sonst: links und rechts gucken und Ziel suchen.
-  // In Richtung auf das nächste Ziel drehen
-  // langsame Fahrt voraus
-
-  // nBattleState:
-  // 0 - lauern, Gegner suchen, Robat auf Gegner ausrichten
-  // 1 - Angriff geradeaus
-  // 2 - Angriff mit Schlenker links
-  // 3 - Angriff mit Schlenker rechts
-  // 4 - Zurückweichen
-  // 5 - Suchfahrt geradeaus starten
-  // 6 - Stop
-  // 7 - Suchfahrt geradeaus
-
-  switch (nBattleState) {
-    case 0:
-      // measure distance in different directions and turn to opponent
-      nAngleOfOpponent = getDirectionOfNearestObject();
-      nDistance = getDistanceDir(nAngleOfOpponent);
-
-      // turn servo back to 90 degrees
-      startServo1(90);
-      delay(DETACH_DELAY);
-      stopServo1();
-
-      if (nAngleOfOpponent < 90) {
-        // turn left
-        turnRobot(LEFT, 4 * (90 - nAngleOfOpponent));
-      }
-      else if (nAngleOfOpponent > 90) {
-        // turn right
-        turnRobot(RIGHT, 4 * (nAngleOfOpponent - 90));
-      }
-      else {
-        // opponent is right ahead, don't turn
-      }
-
-      if (nDistance < 20) {
-        // Attacke
-        // nAttackCounter++;
-        // TODO: different actions depending on number of attacks
-        nBattleState = 1;
-      }
-      else {
-        // Suchfahrt geradeaus
-        nBattleState = 5;
-      }
-      break;
-    case 1:
-      nAttackCounter++; // Anzahl durchgeführter Angriffe
-      
-      nSpeed = MAX_SPEED; // full speed ahead
-      /*
-      startMotor(MOTOR_A, FORWARD, nSpeed);
-      startMotor(MOTOR_B, FORWARD, nSpeed);
-      */
-      startMotors(FORWARD, nSpeed, FORWARD, nSpeed); 
-      delay(1000);
-      
-      stopMotor(MOTOR_A);
-      stopMotor(MOTOR_B);
-=======
     // Standardeinstellungen
     int nDistance = getDistance(); 
     int nAngleOfOpponent = 90;
@@ -1238,7 +908,6 @@ void doBattle() {
             else {
                 // nächstes Objekt liegt recht voraus, Roboter nicht drehen
             }
->>>>>>> refactor
 
             if (nDistance < 20) {
                 // Angriff
@@ -1258,169 +927,6 @@ void doBattle() {
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(1000);
       
-<<<<<<< HEAD
-      //nBattleState = 4; // rückwärts fahren
-      break;
-    case 2:
-      break;
-    case 3:
-      break;
-    case 4:
-      nSpeed = 100;
-      /*
-      startMotor(MOTOR_A, BACKWARD, nSpeed);
-      startMotor(MOTOR_B, BACKWARD, nSpeed);
-      */
-      startMotors(BACKWARD, nSpeed, BACKWARD, nSpeed); 
-      delay(800);
-      stopMotor(MOTOR_A);
-      stopMotor(MOTOR_B);
-      nBattleState = 0;
-      break;
-    case 5:
-      // Suchfahrt geradeaus starten
-      nSpeed = 80;
-      /*
-      startMotor(MOTOR_A, FORWARD, nSpeed);
-      startMotor(MOTOR_B, FORWARD, nSpeed);
-      */
-      startMotors(FORWARD, nSpeed, FORWARD, nSpeed); 
-      // get current time
-      timeOfLastAction = millis();
-
-      nBattleState = 7;
-      break;
-    case 6:
-      stopMotor(MOTOR_A);
-      stopMotor(MOTOR_B);
-      break;
-    case 7:
-      // Suchfahrt geradeaus
-      nDistance = getDistanceDir(90);
-      if (nDistance < 20) {
-        nBattleState = 1;
-      }
-
-      // change state on timeout
-      if (millis() - timeOfLastDistanceMeasurement > 1000) {
-        // // do not stop motors, just change state to search for opponent
-        // stop motors and change state to search for opponent
-        stopMotor(MOTOR_A);
-        stopMotor(MOTOR_B);
-        nBattleState = 0;
-      }
-      break;
-  }
-}
-
-// --- END FUNCTIONS DO_BATTLE ---
-
-
-// --- BEGIN FUNCTIONS AVOID_OBSTACLES ---
-
-// depends on MOTOR, SERVO and ULTRASONIC
-
-void avoidObstacles() {
-  /*
-  // turn about 45 degrees
-  turnRobot(LEFT, 200);
-  delay(1000);
-  turnRobot(RIGHT, 200);
-  delay(1000);
-
-  // turn about 120 degrees
-  turnRobot(LEFT, 500);
-  delay(1000);
-  turnRobot(RIGHT, 500);
-  delay(1000);
-
-  // turn about 230 degrees
-  turnRobot(LEFT, 1000);
-  delay(1000);
-  turnRobot(RIGHT, 1000);
-  delay(1000);
-  */
-
-  int nDistance = getDistance(); // ultrasonic.distanceRead(CM);
-  if (DEBUG) {
-    // Serial.print("Distance to object: ");
-    Serial.println(nDistance);
-  }
-  // timeOfLastDistanceMeasurement = millis();
-
-  showDistance(nDistance);
-
-  int nSpeed = 0;
-  if (digitalRead(BUMPER_PIN) == LOW) {
-    stopMotor(MOTOR_A);
-    stopMotor(MOTOR_B);
-    delay(250);
-    /*
-    startMotor(MOTOR_A, BACKWARD, 128);
-    startMotor(MOTOR_B, BACKWARD, 128);
-    */
-    startMotors(BACKWARD, 128, BACKWARD, 128); 
-    delay(750);
-    stopMotor(MOTOR_A);
-    delay(250);
-    stopMotor(MOTOR_B);
-  }
-  else if (nDistance > 10) {
-    // forward
-    nSpeed = map(nDistance, 15, 150, 80, 128);
-    /*
-    startMotor(MOTOR_A, FORWARD, nSpeed);
-    startMotor(MOTOR_B, FORWARD, nSpeed);
-    */
-    startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
-  }
-  else {
-    stopMotor(MOTOR_A);
-    stopMotor(MOTOR_B);
-
-    // make annoyed noise
-    // tweet(TONE_PIN, 1);
-    TimerFreeTone(TONE_PIN, 440, 80);
-    TimerFreeTone(TONE_PIN, 0, 80);
-    TimerFreeTone(TONE_PIN, 220, 200);
-
-    // measure distance in different directions and turn to free direction
-    startServo1(60);
-    delay(DETACH_DELAY);
-    stopServo1();
-    nDistance = getDistance();
-
-    if (nDistance > 15) {
-      // turn left
-      turnRobot(LEFT, 200);
-    }
-    else {
-      startServo1(120);
-      delay(DETACH_DELAY);
-      stopServo1();
-      nDistance = getDistance();
-
-      if (nDistance > 15) {
-        // turn right
-        turnRobot(RIGHT, 200);
-      }
-      else {
-        // turn around
-        turnRobot(RIGHT, 1000);
-      }
-
-    }
-
-    // set servo to middle position
-    startServo1(90);
-    delay(DETACH_DELAY);
-    stopServo1();
-  }
-
-}
-
-// --- END FUNCTIONS AVOID_OBSTACLES ---
-=======
             stopMotor(MOTOR_A);
             stopMotor(MOTOR_B);
 
@@ -1431,7 +937,6 @@ void avoidObstacles() {
             else {
                 nBattleState = 4; // rückwärts fahren
             }
->>>>>>> refactor
 
             break;
 
@@ -1457,13 +962,6 @@ void avoidObstacles() {
             nBattleState = 0;
             break;
 
-<<<<<<< HEAD
-  int nMotorDir = STOP; // default
-  
-  // Determine if this is a forward or backward motion
-  // Do this by reading the Vertical Value
-  // Apply results to MotorSpeed and to Direction
-=======
         case 5:
             // Suchfahrt geradeaus starten
 
@@ -1472,39 +970,22 @@ void avoidObstacles() {
             
             nSpeed = 80;
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
->>>>>>> refactor
 
             nBattleState = 7;
             break;
 
-<<<<<<< HEAD
-    nMotorDir = BACKWARD;
-    //setMotorDir(MOTOR_A, BACKWARD);
-    //setMotorDir(MOTOR_B, BACKWARD);
-
-    /*
-    // Set Motor A backward
-=======
         case 6:
             // Stop
             
             stopMotor(MOTOR_A);
             stopMotor(MOTOR_B);
             break;
->>>>>>> refactor
 
         case 7:
             // Suchfahrt geradeaus
 
             nDistance = getDistanceDir(90);
 
-<<<<<<< HEAD
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, HIGH);
-    */
-    
-    //Determine Motor Speeds
-=======
             if (nDistance < 20) {
                 // Angriff
                 nBattleState = 1;
@@ -1515,7 +996,6 @@ void avoidObstacles() {
                 // anhalten und erneut nach Gegnern suchen
                 stopMotor(MOTOR_A);
                 stopMotor(MOTOR_B);
->>>>>>> refactor
 
                 nBattleState = 0;
             }
@@ -1528,16 +1008,7 @@ void avoidObstacles() {
 
 // --- BEGIN FUNCTIONS AVOID_OBSTACLES ---
 
-<<<<<<< HEAD
-    nMotorDir = FORWARD;
-    //setMotorDir(MOTOR_A, FORWARD);
-    //setMotorDir(MOTOR_B, FORWARD);
-  
-    /*
-    // Set Motor A forward
-=======
 // Diese Funktionen sind abhängig von den Abschnitten MOTOR, SERVO und ULTRASONIC
->>>>>>> refactor
 
 /**
  * Die Funktion versucht, den Roboter so zu steuern, dass er nicht 
@@ -1548,20 +1019,12 @@ void avoidObstacles() {
 
     int nDistance = getDistance(); 
 
-<<<<<<< HEAD
-    digitalWrite(in3, HIGH);
-    digitalWrite(in4, LOW);
-    */
-    
-    //Determine Motor Speeds
-=======
     if (DEBUG) {
         // Serial.print("Distance to object: ");
         Serial.println(nDistance);
     }
 
     showDistance(nDistance);
->>>>>>> refactor
 
     int nSpeed = 0;
     if (digitalRead(BUMPER_PIN) == LOW) {
@@ -1747,26 +1210,6 @@ void manualControl() {
     // nicht an, manchmal entsteht ein summendes Geräusch. Das wird hier
     // unterdrückt.
 
-<<<<<<< HEAD
-  if (MotorSpeed1 < 8) MotorSpeed1 = 0;
-  if (MotorSpeed2 < 8) MotorSpeed2 = 0;
-
-  // debug
-  if ((MotorSpeed1 == 0) || (MotorSpeed2 == 0)) {
-    leds[0] = CRGB::White;
-    leds[1] = CRGB::White;
-  }
-  else if (FORWARD == nMotorDir) {
-    leds[0] = CRGB::Blue;
-    leds[1] = CRGB::Blue;
-  }
-  else if (BACKWARD == nMotorDir) {
-    leds[0] = CRGB::Green;
-    leds[1] = CRGB::Green;
-  }
-  
-  FastLED.show();
-=======
     // Motorgeschwindigkeit mit den LEDs anzeigen
     if (nMotorSpeed1 < 8) {
         nMotorSpeed1 = 0;
@@ -1786,60 +1229,14 @@ void manualControl() {
         leds[0] = CRGB::Green;
         leds[1] = CRGB::Green;
     }
->>>>>>> refactor
 
     FastLED.show();
 
-<<<<<<< HEAD
-  // start motors slowly so they don't draw too much current as the voltage
-  // drop might cause the Arduino to reset
-
-  // MotorSpeed1 and MotorSpeed2 are the target speeds of each motor
-  
-  //analogWrite(enA, MotorSpeed1);
-  //analogWrite(enB, MotorSpeed2);
-
-  // change speed slowly
-  // PrevMotorSpeed1 and PrevMotorSpeed2 represent the previously set speed 
-  // of each motor. This can be less than, equal or greater than the new
-  // motor speed.
-
-  // startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB);
-  startMotors(nMotorDir, MotorSpeed1, nMotorDir, MotorSpeed2);
-
-  /*
-  int nCurMotorSpeed1 = PrevMotorSpeed1;
-  int nCurMotorSpeed2 = PrevMotorSpeed2;
-  while ((nCurMotorSpeed1 != MotorSpeed1) || (nCurMotorSpeed2 != MotorSpeed2)) {
-    if (nCurMotorSpeed1 > MotorSpeed1) {
-      nCurMotorSpeed1--;
-    }
-    if (nCurMotorSpeed1 < MotorSpeed1) {
-      nCurMotorSpeed1++;
-    }
-    if (nCurMotorSpeed2 > MotorSpeed2) {
-      nCurMotorSpeed2--;
-    }
-    if (nCurMotorSpeed2 < MotorSpeed2) {
-      nCurMotorSpeed2++;
-    }
-    analogWrite(enA, nCurMotorSpeed1);
-    analogWrite(enB, nCurMotorSpeed2);
-
-    // wait some time
-    delay(MOTOR_START_DELAY);
-  }
-  PrevMotorSpeed1 = MotorSpeed1;
-  PrevMotorSpeed2 = MotorSpeed2;
-  */
-  
-=======
     // Motorgeschwindigkeiten setzen    
     
     // startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB);
     startMotors(nMotorDir, nMotorSpeed1, nMotorDir, nMotorSpeed2);
 
->>>>>>> refactor
 }
 
 // --- END FUNCTIONS MANUAL_CONTROL ---
@@ -1957,22 +1354,6 @@ void setup() {
     int nDistance = getDistance(); 
     int bButtonPressed = digitalRead(BUMPER_PIN);
 
-<<<<<<< HEAD
-  int bButtonPressed = digitalRead(BUMPER_PIN);
-  
-  if (LOW == bButtonPressed) {
-    nMode = MANUAL; 
-  }
-  else if (nDistance < 10) {
-    nMode = MANUAL;
-  }
-  else if (nDistance < 30) {
-    nMode = AUTONOMOUS;
-  }
-  else {
-    nMode = BATTLE;
-  }
-=======
     if (LOW == bButtonPressed) {
         nMode = MANUAL; 
     }
@@ -1985,7 +1366,6 @@ void setup() {
     else {
         nMode = BATTLE;
     }
->>>>>>> refactor
 
 
 // --- BEGIN SETUP AUTOMANUAL ---
