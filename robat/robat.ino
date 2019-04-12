@@ -525,109 +525,112 @@ void moveServoBackForth() {
 // --- BEGIN FUNCTIONS MOTOR ---
 
 /**
- * Start motor
+ * Einen der beiden Motoren einschalten. 
  *
- * @param int nMotor: 0 - motor A, 1 - motor B
- * @param int nDir: 0 - forward, 1 - backward
- * @param int nSpeed: speed 0..255, limited by MAX_SPEED
+ * @param int nMotor: Auswahl des Motors, 0 - Motor A, 1 - Motor B
+ * @param int nDir: Drehrichtung, 0 - vorwärts, 1 - rückwärts
+ * @param int nSpeed: Geschwindigkeit (0..255), wird durch MAX_SPEED begrenzt
  *
  */
 void startMotor(int nMotor, int nDir, int nSpeed) {
 
-  if (DEBUG) {
-    Serial.print(millis());
-    Serial.print(", ");
-    Serial.print("Starting motor ");
-    Serial.print(nMotor);
-    Serial.print(", dir: ");
-    Serial.print(nDir);
-    Serial.print(", speed: ");
-    Serial.println(nSpeed);
-  }
-  
-  // limit speed to 0 .. MAX_SPEED
-  nSpeed = max(0, min(nSpeed, MAX_SPEED));
+    if (DEBUG) {
+        Serial.print(millis());
+        Serial.print(", ");
+        Serial.print("Starting motor ");
+        Serial.print(nMotor);
+        Serial.print(", dir: ");
+        Serial.print(nDir);
+        Serial.print(", speed: ");
+        Serial.println(nSpeed);
+    }
 
-  if (MOTOR_A == nMotor) {
-    if (FORWARD == nDir) {
-      // motor A forward
-      // Set Motor A forward
-      digitalWrite(MOTOR_A_IN1_PIN, HIGH);
-      digitalWrite(MOTOR_A_IN2_PIN, LOW);
+    // Geschwindigkeit auf 0 .. MAX_SPEED begrenzen
+    nSpeed = max(0, min(nSpeed, MAX_SPEED));
+
+    if (MOTOR_A == nMotor) {
+        if (FORWARD == nDir) {
+            // Motor A vorwärts
+            digitalWrite(MOTOR_A_IN1_PIN, HIGH);
+            digitalWrite(MOTOR_A_IN2_PIN, LOW);
+        }
+        else {
+            // Motor A rückwärts
+            digitalWrite(MOTOR_A_IN1_PIN, LOW);
+            digitalWrite(MOTOR_A_IN2_PIN, HIGH);
+        }
+        analogWrite(MOTOR_A_ENABLE_PIN, nSpeed);
     }
     else {
-      // motor A backward
-      // Set Motor A backward
-      digitalWrite(MOTOR_A_IN1_PIN, LOW);
-      digitalWrite(MOTOR_A_IN2_PIN, HIGH);
+        if (FORWARD == nDir) {
+            // Motor B vorwärts
+            digitalWrite(MOTOR_B_IN3_PIN, HIGH);
+            digitalWrite(MOTOR_B_IN4_PIN, LOW);
+        }
+        else {
+            // Motor B rückwärts
+            digitalWrite(MOTOR_B_IN3_PIN, LOW);
+            digitalWrite(MOTOR_B_IN4_PIN, HIGH);
+        }
+        analogWrite(MOTOR_B_ENABLE_PIN, nSpeed);
     }
-    analogWrite(MOTOR_A_ENABLE_PIN, nSpeed);
-  }
-  else {
-    if (FORWARD == nDir) {
-      // motor B forward
-      // Set Motor B forward
-      digitalWrite(MOTOR_B_IN3_PIN, HIGH);
-      digitalWrite(MOTOR_B_IN4_PIN, LOW);
-    }
-    else {
-      // motor B backward
-      // Set Motor B backward
-      digitalWrite(MOTOR_B_IN3_PIN, LOW);
-      digitalWrite(MOTOR_B_IN4_PIN, HIGH);
-    }
-    analogWrite(MOTOR_B_ENABLE_PIN, nSpeed);
-  }
 }
 
+
 /**
- * Start motor
+ * Einen der Motoren anhalten
  *
- * @param int nMotor: 0 - motor A, 1 - motor B
+ * @param int nMotor: Auswahl des Motors, 0 - Motor A, 1 - Motor B
  */
 void stopMotor(int nMotor) {
 
-  if (DEBUG) {
-    Serial.print(millis());
-    Serial.print(", ");
-    Serial.print("stopping motor ");
-    Serial.println(nMotor);
-  }
-  
-  if (MOTOR_A == nMotor) {
-    digitalWrite(MOTOR_A_IN1_PIN, LOW);
-    digitalWrite(MOTOR_A_IN2_PIN, LOW);
-    analogWrite(MOTOR_A_ENABLE_PIN, 0); // set high to switch motor off, 0 for short brake
-  }
-  else {
-    digitalWrite(MOTOR_B_IN3_PIN, LOW);
-    digitalWrite(MOTOR_B_IN4_PIN, LOW);
-    analogWrite(MOTOR_B_ENABLE_PIN, 0); // set high to switch motor off, 0 for short brake
-  }
+    if (DEBUG) {
+        Serial.print(millis());
+        Serial.print(", ");
+        Serial.print("stopping motor ");
+        Serial.println(nMotor);
+    }
+
+    if (MOTOR_A == nMotor) {
+        digitalWrite(MOTOR_A_IN1_PIN, LOW);
+        digitalWrite(MOTOR_A_IN2_PIN, LOW);
+        
+        // HIGH, um den Motor auszuschalten, 0 zum Bremsen
+        analogWrite(MOTOR_A_ENABLE_PIN, 0); 
+    }
+    else {
+        digitalWrite(MOTOR_B_IN3_PIN, LOW);
+        digitalWrite(MOTOR_B_IN4_PIN, LOW);
+        
+        // HIGH, um den Motor auszuschalten, 0 zum Bremsen
+        analogWrite(MOTOR_B_ENABLE_PIN, 0); 
+    }
 }
 
 
 /**
- * Turns robot left or right by starting motor A forward and motor B backward
- * or vice versa for nDelay milliseconds.
+ * Dreht den Roboter nach links oder rechts, indem ein Motor für nDelay 
+ * Millisekunden vorwärts und der andere rückwärts gedreht wird.
  *
- * @param int nDir: 0 - left / 1 - right
- * @param int nDelay: delay in milliseconds
+ * @param int nDir: Drehrichtung, 0 - links / 1 - rechts
+ * @param int nDelay: Dauer der Drehung in ms
  *
  */
 void turnRobot(int nDir, int nDelay) {
-  int nSpeed = 128;
-  if (LEFT == nDir) {
-    startMotor(MOTOR_A, FORWARD, nSpeed);
-    startMotor(MOTOR_B, BACKWARD, nSpeed);
-  }
-  else {
-    startMotor(MOTOR_A, BACKWARD, nSpeed);
-    startMotor(MOTOR_B, FORWARD, nSpeed);
-  }
-  delay(nDelay); // TODO: replace by non-blocking control
-  stopMotor(MOTOR_A);
-  stopMotor(MOTOR_B);
+    int nSpeed = 128;
+
+    if (LEFT == nDir) {
+        startMotor(MOTOR_A, FORWARD, nSpeed);
+        startMotor(MOTOR_B, BACKWARD, nSpeed);
+    }
+    else {
+        startMotor(MOTOR_A, BACKWARD, nSpeed);
+        startMotor(MOTOR_B, FORWARD, nSpeed);
+    }
+
+    delay(nDelay); 
+    stopMotor(MOTOR_A);
+    stopMotor(MOTOR_B);
 }
 
 // --- END FUNCTIONS MOTOR ---
