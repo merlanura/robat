@@ -1,30 +1,29 @@
 /**
  * Steuersoftware für den Roboterbausatz RoBat
- * 
+ *
  * https://github.com/merlanura/robat
  * https://robot-workshop.de/
- * 
- * Copyright (C) 2018 Michael Ibsen
  *
+ * Michael Ibsen
  * ibsen@gmx.net
  *
- * 2019-04-12
+ * 2021-09-03
  *
  * License: GNU GPLv3
  * http://www.gnu.de/documents/gpl.de.html
- * 
- * Dieses Programm ist freie Software. Sie können es unter den Bedingungen 
- * der GNU General Public License, wie von der Free Software Foundation 
- * veröffentlicht, weitergeben und/oder modifizieren, entweder gemäß 
+ *
+ * Dieses Programm ist freie Software. Sie können es unter den Bedingungen
+ * der GNU General Public License, wie von der Free Software Foundation
+ * veröffentlicht, weitergeben und/oder modifizieren, entweder gemäß
  * Version 3 der Lizenz oder (nach Ihrer Option) jeder späteren Version.
- * 
- * Die Veröffentlichung dieses Programms erfolgt in der Hoffnung, daß es 
- * Ihnen von Nutzen sein wird, aber OHNE IRGENDEINE GARANTIE, sogar ohne 
- * die implizite Garantie der MARKTREIFE oder der VERWENDBARKEIT FÜR 
- * EINEN BESTIMMTEN ZWECK. Details finden Sie in der GNU General Public 
+ *
+ * Die Veröffentlichung dieses Programms erfolgt in der Hoffnung, daß es
+ * Ihnen von Nutzen sein wird, aber OHNE IRGENDEINE GARANTIE, sogar ohne
+ * die implizite Garantie der MARKTREIFE oder der VERWENDBARKEIT FÜR
+ * EINEN BESTIMMTEN ZWECK. Details finden Sie in der GNU General Public
  * License.
- * 
- * Sie sollten ein Exemplar der GNU General Public License zusammen mit 
+ *
+ * Sie sollten ein Exemplar der GNU General Public License zusammen mit
  * diesem Programm erhalten haben. Falls nicht, siehe <http://www.gnu.org/licenses/>.
  *
  */
@@ -36,16 +35,19 @@
 // --- END INIT GENERAL ---
 
 
-// --- BEGIN INIT AUTOMANUAL ---
+// --- BEGIN INIT MODE ---
 
-// RoBat verfügt über drei verschiedene Betriebsmodi: 
+// RoBat verfügt über vier verschiedene Betriebsmodi:
 // - manuelle Steuerung (MANUAL)
 // - Hindernisvermeidung (AUTONOMOUS)
 // - Hebocon- / Kampf (BATTLE)
+// - Steuerung durch externe Controller über serielle Scnittstelle (SERIAL)
 
 #define MANUAL 0
 #define AUTONOMOUS 1
 #define BATTLE 2
+#define SERIALCMD 3
+
 
 // Standard-Modus ist MANUAL
 int nMode = MANUAL;
@@ -55,20 +57,23 @@ int nMode = MANUAL;
 // Im BATTLE Modus durchläuft das Programm verschiedene Zustände.
 // Hier initialisieren wir die Zustandsvariablen
 
-int nBattleState = 1; 
+int nBattleState = 1;
 int nAttackCounter = 0;
 
-// --- END INIT AUTOMANUAL ---
+// --- END INIT MODE ---
 
 
 // --- BEGIN INIT BUMPER ---
 
-// Mittels eines Schalters auf Pin BUMPER_PIN kann RoBat Kollisionen erkennen.
-// Der Joystick-Button ist mit Pin 2 verbunden. Wenn BUMPER_PIN ebenfalls
-// auf 2 gesetzt wird, wird ein Druck auf den Joystick-Button als Kollision
-// interpretiert.
+// Mittels Schaltern auf den Pins BUMPER1_PIN und BUMPER2_PIN kann RoBat
+// Kollisionen erkennen. Die analogen Eingänge A2 und A3 werden dafür in setup()
+// als digitale Eingänge konfiguriert.
+// Der Joystick-Button ist mit Pin JOYSTICK_SWITCH_PIN verbunden. Bei Bedarf kann dieser Pin
+// zusätzlich zur Kollisionserkennung eingesetzt werden.
 
-#define BUMPER_PIN 2
+#define JOYSTICK_SWITCH_PIN 2
+#define BUMPER1_PIN A2
+#define BUMPER2_PIN A3
 
 // --- END INIT BUMPER ---
 
@@ -84,9 +89,9 @@ int nAttackCounter = 0;
 // beim Arduino Nano also Pins 3, 5, 6, 9, 10 oder 11. Die RoBat-Platine
 // benutzt Pin 11
 
-#define TONE_PIN 11 
+#define TONE_PIN 11
 
-// Eine Zuordnung von Notennamen zu Frequenzen macht die Definition 
+// Eine Zuordnung von Notennamen zu Frequenzen macht die Definition
 // von Melodien leichter lesbar.
 // Quelle: https://de.wikipedia.org/wiki/Frequenzen_der_gleichstufigen_Stimmung
 
@@ -145,28 +150,28 @@ int duration[] = { VIERTEL, ACHTEL,  ACHTEL,  VIERTEL, VIERTEL, VIERTEL,    VIER
 
 // servos on A0 (D14) and A1 (D15)
 
-// RoBat verfügt über zwei Servos. Servo 2 wird zum Drehen des 
+// RoBat verfügt über zwei Servos. Servo 2 wird zum Drehen des
 // Ultraschallsensors verwendet. Servo 1 ist frei verwendbar und wird
 // in diesem Sketch langsam hin- und her bewegt.
 
 // Für jeden Servo wird die minimale und maximale Position angegeben.
-// Die minimale Position sollte theoretisch 0, die maximale 180 Grad sein. 
-// In der Praxis werden diese Werte oft nicht erreicht. Sie müssen 
-// individuell bestimmt werden. 
+// Die minimale Position sollte theoretisch 0, die maximale 180 Grad sein.
+// In der Praxis werden diese Werte oft nicht erreicht. Sie müssen
+// individuell bestimmt werden.
 
 #define SERVO_1_PIN 13
 #define SERVO_1_MIN 10   // minimale Position 0-180
 #define SERVO_1_MAX 170  // maximale Position 0-180
 
 #define SERVO_2_PIN 12
-#define SERVO_2_MIN 25   // minimale Position 0-180
-#define SERVO_2_MAX 180  // maximale Position 0-180
+#define SERVO_2_MIN 10   // minimale Position 0-180
+#define SERVO_2_MAX 170  // maximale Position 0-180
 
 // Der Servo benötigt eine gewisse Zeit für die Drehung. DETACH_DELAY gibt
 // diese Zeit in ms an.
 
-#define DETACH_DELAY_SERVO_1 300 
-#define DETACH_DELAY_SERVO_2 150 
+#define DETACH_DELAY_SERVO_1 300
+#define DETACH_DELAY_SERVO_2 150
 
 // Servo Objekte erstellen
 
@@ -178,18 +183,18 @@ bool bAttachedServo2 = false;
 
 // Das Bewegen eines Servos dauert einige Zeit. Der Programmablauf soll
 // nicht durch das Warten auf das Ende der Bewegung ausgebremst werden.
-// Daher führen wir die Bewegung in kleinen Teilen aus. Wir merken uns 
+// Daher führen wir die Bewegung in kleinen Teilen aus. Wir merken uns
 // die Systemzeit bei Beginn der Bewegung und jeweils bei der Ausführung
 // einer Teilbewegung. In der Loop prüfen wir, ob der Zeitpunkt für die
-// nächste Bewegung gekommen ist und führen die nächste Teilbewegung 
+// nächste Bewegung gekommen ist und führen die nächste Teilbewegung
 // (nur) dann aus.
 
 unsigned long timeOfLastChangeServo1 = 0;
 unsigned long timeOfLastChangeServo2 = 0;
 
 // Für die Bewegung erhält ein Servo eine Zielposition. Während der
-// Teilbewegungen besitzt er jeweils eine aktuelle Position. Durch 
-// Vergleich der beiden kann entschieden werden, ob eine weitere 
+// Teilbewegungen besitzt er jeweils eine aktuelle Position. Durch
+// Vergleich der beiden kann entschieden werden, ob eine weitere
 // Bewegung notwendig ist.
 
 int actualPositionServo1 = 0;
@@ -204,7 +209,7 @@ int targetPositionServo2 = 0;
 
 // Zur Entfernungsmessung wird ein Ultraschallsensor HC-SR04 eingesetzt.
 // Der Messbereich liegt theoretisch zwischen 1cm und 400cm, in der Praxis
-// sind Werte bis 200cm realistisch. 
+// sind Werte bis 200cm realistisch.
 
 // Wir verwenden die Ultrasonic Library von Erick Simões in der Version 3.0.0
 // https://github.com/ErickSimoes/Ultrasonic
@@ -212,8 +217,8 @@ int targetPositionServo2 = 0;
 // Hinweis:
 // Beim Compilieren kann es zu einer Fehlermeldung kommen:
 // "as: unrecognized option '-mmcu=avr5'"
-// Der Fehler lässt sich durch Verwendung der Version 1.6.9 des 
-// Boardverwalters umgehen. 
+// Der Fehler lässt sich durch Verwendung der Version 1.6.9 des
+// Boardverwalters umgehen.
 
 #include <Ultrasonic.h>
 
@@ -235,13 +240,13 @@ Ultrasonic ultrasonic(TRIGGER_PIN, ECHO_PIN);
 
 // --- BEGIN INIT WS2811 ---
 
-// Für die Ansteuerung der LEDs (P9812 bzw. WS8212) verwenden wir die 
+// Für die Ansteuerung der LEDs (P9812 bzw. WS8212) verwenden wir die
 // FastLED Library von Daniel Garcia in der Version 3.2.6
 // https://github.com/FastLED/FastLED
 
 #include <FastLED.h>
 
-// Anzahl der LEDs. RoBat verwendet standardmäßig nur zwei, aber mit 
+// Anzahl der LEDs. RoBat verwendet standardmäßig nur zwei, aber mit
 // dieser Angabe können bis zu 12 hintereinandergeschaltet werden.
 #define NUM_LEDS 12
 
@@ -257,7 +262,7 @@ CRGB leds[NUM_LEDS];
 // --- BEGIN INIT MOTOR ---
 
 // Auf dem Motortreiberboard sind die Eingänge für Motor A mit in1 und in2
-// markiert und die Eingänge für Motor B mit in3 und in4. 
+// markiert und die Eingänge für Motor B mit in3 und in4.
 
 // Motor A
 #define MOTOR_A_ENABLE_PIN 6
@@ -272,7 +277,7 @@ CRGB leds[NUM_LEDS];
 #define MOTOR_STANDBY_PIN 9
 
 
-// Geschwindigkeiten der beiden Motoren 
+// Geschwindigkeiten der beiden Motoren
 int nMotorSpeed1 = 0;
 int nMotorSpeed2 = 0;
 
@@ -310,7 +315,7 @@ int nPrevMotorSpeed2 = 0;
 int nJoyPosV = 512;
 int nJoyPosH = 512;
 
-// Werte zwischen JOY_MIDDLE_MIN und JOY_MIDDLE_MAX werden als 
+// Werte zwischen JOY_MIDDLE_MIN und JOY_MIDDLE_MAX werden als
 // Mittelstellung interpretiert
 #define JOY_MIDDLE_MIN 472
 #define JOY_MIDDLE_MAX 552
@@ -318,14 +323,27 @@ int nJoyPosH = 512;
 // --- END INIT JOYSTICK ---
 
 
+// --- BEGIN INIT SERIAL COMMANDS ---
+
+#define SERIALSPEED 57600
+
+String inputString = "";         // a String to hold incoming data
+bool stringComplete = false;  // whether the string is complete
+// turn off motors after nMotorTimeout ms without receiving a serial command
+unsigned long nMotorTimeout = 5000;
+unsigned long nLastCmd = millis();
+
+// --- END INIT SERIAL COMMANDS ---
+
+
 // --- BEGIN FUNCTIONS ULTRASONIC ---
 
 /**
  * Ermittelt die Distanz vom Roboter zum nächsten Hindernis mit dem
- * Ultraschallsensor. 
+ * Ultraschallsensor.
  * Die Entfernung wird dabei mehrfach gemessen, um Fehler zu minimieren.
  * Negative Entfernungen werden ignoriert (Messfehler).
- * 
+ *
  * Gibt den Durchschnittswert der Messungen zurück.
  *
  * @param int nMeasurements: Anzahl der Messungen, Default 3
@@ -367,8 +385,8 @@ int getDistance(int nMeasurements = 3) {
 /**
  * Zeigt die Entfernung zum nächsten Objekt mit den LEDs 0 und 1 durch
  * unterschiedliche Farben an.
- * 
- * 150cm - oo: schwarz 
+ *
+ * 150cm - oo: schwarz
  *  51cm - 150cm: grün
  *  31cm -  50cm: blau
  *  16cm -  30cm: türkis
@@ -399,13 +417,13 @@ void showDistance(int nDistance) {
       color = CRGB::Black;
     }
 
-    // HINT: Diese Funktion ist zeitkritisch. Wenn mehr als 2 LEDs 
-    // (bzw. deren Array-Elemente) gesetzt werden, laufen die Motoren 
-    // nicht mehr. 
+    // HINT: Diese Funktion ist zeitkritisch. Wenn mehr als 2 LEDs
+    // (bzw. deren Array-Elemente) gesetzt werden, laufen die Motoren
+    // nicht mehr.
 
     leds[0] = color;
     leds[1] = color;
-    
+
     FastLED.show();
 }
 
@@ -416,7 +434,7 @@ void showDistance(int nDistance) {
 
 /**
  * Stellt die Zielposition für Servo 1 ein und schaltet den Servomotor ein.
- * 
+ *
  */
 void startServo1(int targetPos) {
     targetPositionServo1 = targetPos;
@@ -429,7 +447,7 @@ void startServo1(int targetPos) {
     // Dabei werden die minimale und maximale Position berücksichtigt.
     int targetPosCorrected = map(targetPositionServo1, 0, 180, SERVO_1_MIN, SERVO_1_MAX);
     servo1.write(targetPosCorrected);
-        
+
     if (DEBUG) {
       Serial.print("actualPositionServo1: ");
       Serial.println(actualPositionServo1);
@@ -443,7 +461,7 @@ void startServo1(int targetPos) {
 
 /**
  * Stellt die Zielposition für Servo 2 ein und schaltet den Servomotor ein.
- * 
+ *
  */
 void startServo2(int targetPos) {
     targetPositionServo2 = targetPos;
@@ -472,7 +490,7 @@ void startServo2(int targetPos) {
 
 /**
  * Hält Servo 1 an.
- * 
+ *
  */
 void stopServo1() {
    servo1.detach();
@@ -487,7 +505,7 @@ void stopServo1() {
 
 /**
  * Hält Servo 2 an.
- * 
+ *
  */
 void stopServo2() {
    servo2.detach();
@@ -501,9 +519,9 @@ void stopServo2() {
 
 
 /**
- * Bewegt Servo 1 hin und her. Dabei werden nacheinander mehrere 
+ * Bewegt Servo 1 hin und her. Dabei werden nacheinander mehrere
  * Positionen angesteuert.
- * 
+ *
  */
 void moveServoBackForth() {
 
@@ -532,7 +550,7 @@ void moveServoBackForth() {
         timeOfLastChangeServo1 = timeNow;
     }
 
-    // Servo anhalten, wenn die Position erreicht ist bzw. die Zeit für die 
+    // Servo anhalten, wenn die Position erreicht ist bzw. die Zeit für die
     // Erreichung der Position abgelaufen ist.
     if (bAttachedServo1 && (timeNow - timeOfLastChangeServo1) > DETACH_DELAY_SERVO_1) {
         if (DEBUG) {
@@ -553,7 +571,7 @@ void moveServoBackForth() {
 
 /**
  * Setzt die Drehrichtung der Motoren ohne die Geschwindigkeit zu ändern.
- * 
+ *
  * @param int nMotor: 0 - motor A, 1 - motor B
  * @param int nDir: 0 - forward, 1 - backward
  */
@@ -583,10 +601,10 @@ void setMotorDir(int nMotor, int nDir) {
         }
     }
 }
-  
+
 
 /**
- * Einen der beiden Motoren einschalten. 
+ * Einen der beiden Motoren einschalten.
  *
  * @param int nMotor: Auswahl des Motors, 0 - Motor A, 1 - Motor B
  * @param int nDir: Drehrichtung, 0 - vorwärts, 1 - rückwärts
@@ -616,7 +634,7 @@ void startMotor(int nMotor, int nDir, int nSpeed) {
     }
     else {
         analogWrite(MOTOR_B_ENABLE_PIN, nSpeed);
-    }   
+    }
 }
 
 
@@ -637,16 +655,16 @@ void stopMotor(int nMotor) {
     if (MOTOR_A == nMotor) {
         digitalWrite(MOTOR_A_IN1_PIN, LOW);
         digitalWrite(MOTOR_A_IN2_PIN, LOW);
-        
+
         // HIGH, um den Motor auszuschalten, 0 zum Bremsen
-        analogWrite(MOTOR_A_ENABLE_PIN, 0); 
+        analogWrite(MOTOR_A_ENABLE_PIN, 0);
     }
     else {
         digitalWrite(MOTOR_B_IN3_PIN, LOW);
         digitalWrite(MOTOR_B_IN4_PIN, LOW);
-        
+
         // HIGH, um den Motor auszuschalten, 0 zum Bremsen
-        analogWrite(MOTOR_B_ENABLE_PIN, 0); 
+        analogWrite(MOTOR_B_ENABLE_PIN, 0);
     }
 }
 
@@ -662,33 +680,33 @@ void stopMotors(int nDir) {
 
     digitalWrite(MOTOR_A_IN1_PIN, LOW);
     digitalWrite(MOTOR_A_IN2_PIN, LOW);
-    
+
     // HIGH, um den Motor auszuschalten, 0 zum Bremsen
     analogWrite(MOTOR_A_ENABLE_PIN, 0);
 
     digitalWrite(MOTOR_B_IN3_PIN, LOW);
     digitalWrite(MOTOR_B_IN4_PIN, LOW);
-    
+
     // HIGH, um den Motor auszuschalten, 0 zum Bremsen
-    analogWrite(MOTOR_B_ENABLE_PIN, 0); 
+    analogWrite(MOTOR_B_ENABLE_PIN, 0);
 
     nPrevMotorSpeed1 = 0;
     nPrevMotorSpeed2 = 0;
 }
 
 /**
- * Setzt die Motorgeschwindigkeiten. Dabei wird die Zielgeschwindigkeit 
+ * Setzt die Motorgeschwindigkeiten. Dabei wird die Zielgeschwindigkeit
  * langsam angesteuert, um den Einschaltstrom zu minimieren.
- * 
+ *
  * @param int Richtung Motor A
  * @param int Geschwindigkeit Motor A
  * @param int Richtung Motor B
  * @param int Geschwindigkeit Motor B
- * 
+ *
  * Die Funktion benutzt die globalen Variablen nPrevMotorSpeed1 und nPrevMotorSpeed2
  */
 void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
-  
+
     // Drehrichtungen setzen
     setMotorDir(MOTOR_A, nDirA);
     setMotorDir(MOTOR_B, nDirB);
@@ -697,18 +715,18 @@ void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
     // jeden Motor.
 
     // Die Geschwindigkeit wird mit einer Verzögerung erreicht, um den
-    // Einschaltstrom gering zu halten. Ohne diese Maßnahme kann der 
-    // Einschaltstrom so groß werden, dass die Batterien überlastet 
+    // Einschaltstrom gering zu halten. Ohne diese Maßnahme kann der
+    // Einschaltstrom so groß werden, dass die Batterien überlastet
     // werden und die Spannung zusammenbricht. In der Folge startet
     // der Arduino neu.
-      
+
     // nPrevMotorSpeed1 und nPrevMotorSpeed2 speichern die vorherige Geschwindigkeit
-    // der beiden Motoren. Diese kann kleiner, größer oder gleich der 
+    // der beiden Motoren. Diese kann kleiner, größer oder gleich der
     // gewünschten Zielgeschwindigkeit sein.
 
     // nDelay hängt von der Differenz zwischen aktueller und Zielgeschwindigkeit
     // ab.
-    
+
     int nDelay = 0;
     int nDiffA = abs(nSpeedA - nPrevMotorSpeed1);
     int nDiffB = abs(nSpeedB - nPrevMotorSpeed2);
@@ -756,7 +774,7 @@ void startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB){
 
 
 /**
- * Dreht den Roboter nach links oder rechts, indem ein Motor für nDelay 
+ * Dreht den Roboter nach links oder rechts, indem ein Motor für nDelay
  * Millisekunden vorwärts und der andere rückwärts gedreht wird.
  *
  * @param int nDir: Drehrichtung, 0 - links / 1 - rechts
@@ -776,7 +794,7 @@ void turnRobot(int nDir, int nDelay) {
         startMotors(BACKWARD, nSpeed, FORWARD, nSpeed);
     }
 
-    delay(nDelay); 
+    delay(nDelay);
     stopMotors(FORWARD);
 }
 
@@ -809,15 +827,15 @@ int getDistanceDir(int nAngle) {
 
 
 /**
- * Misst den Abstand zum nächsten Objekt in verschiedenen Richtungen. 
+ * Misst den Abstand zum nächsten Objekt in verschiedenen Richtungen.
  * Liefert die Richtung (Winkel) des nächsten Objekts zurück.
- * 
- * Falls es mehrere nächste Objekte gibt, wird der kleinere Winkel 
+ *
+ * Falls es mehrere nächste Objekte gibt, wird der kleinere Winkel
  * zurückgegeben.
  *
- * Falls kein Objekt weniger als nMaxDistance cm entfernt ist, wird ein 
+ * Falls kein Objekt weniger als nMaxDistance cm entfernt ist, wird ein
  * Winkel von 90 Grad zurückgeliefert.
- * 
+ *
  * @param int nMaxDistance: max. Entfernung eines Objekts, Default 100cm
  * @return int nAngle: Winkel zum nächsten Objekt oder 90 Grad, falls kein Objekt in der Nähe ist.
  *
@@ -829,7 +847,7 @@ int getDirectionOfNearestObject(int nMaxDistance = 100) {
     int nNearestObjectDistance = 999;
     int nDistance = 0;
 
-    // mehrer Winkel durchlaufen und jeweils den Abstand messen
+    // mehrere Winkel durchlaufen und jeweils den Abstand messen
     for (int nAngle = nMinAngle; nAngle < nMaxAngle; nAngle += 30) { // 15
         startServo2(nAngle);
         delay(DETACH_DELAY_SERVO_2);
@@ -847,17 +865,17 @@ int getDirectionOfNearestObject(int nMaxDistance = 100) {
 
 
 /**
- * Die Funktion sucht nach Objekten in der Nähe und greift sie an. 
- * 
- * Die Funktion durchläuft verschiedene Zustände ("Endlicher Automat"). 
+ * Die Funktion sucht nach Objekten in der Nähe und greift sie an.
+ *
+ * Die Funktion durchläuft verschiedene Zustände ("Endlicher Automat").
  * Jeder Zustand ist mit einer Handlung verbunden.
  * Der Übergang in einen anderen Zustand wird über interne und externe
  * Bedingungen bestimmt.
- * 
+ *
  */
 void doBattle() {
     // Standardeinstellungen
-    int nDistance = getDistance(); 
+    int nDistance = getDistance();
     int nAngleOfOpponent = 90;
     int nSpeed = 0;
 
@@ -866,7 +884,7 @@ void doBattle() {
 
     // Zustand setzen
 
-    // Entfernung zum Ziel < 30cm? Dann Attacke
+    // Entfernung zum Ziel < 20cm? Dann Attacke
     // sonst: links und rechts gucken und Ziel suchen.
     // In Richtung auf das nächste Ziel drehen
     // langsame Fahrt voraus
@@ -884,8 +902,8 @@ void doBattle() {
     switch (nBattleState) {
         case 0:
             // lauern, Gegner suchen, Robat auf Gegner ausrichten
-            
-            // Abstand in verschiedene Richtungen messen und zum nächsten 
+
+            // Abstand in verschiedene Richtungen messen und zum nächsten
             // Objekt drehen
             nAngleOfOpponent = getDirectionOfNearestObject();
             nDistance = getDistanceDir(nAngleOfOpponent);
@@ -909,7 +927,7 @@ void doBattle() {
 
             if (nDistance < 20) {
                 // Angriff
-                nBattleState = 1;
+                nBattleState = random(3) + 1; // 1, 2 oder 3
             }
             else {
                 // Suchfahrt geradeaus
@@ -918,13 +936,13 @@ void doBattle() {
             break;
         case 1:
             // Angriff geradeaus
-            
+
             nAttackCounter++; // Anzahl durchgeführter Angriffe
-      
+
             nSpeed = MAX_SPEED; // volle Kraft voraus
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(1000);
-      
+
             stopMotors(FORWARD);
 
             if (1 == nAttackCounter) {
@@ -939,12 +957,66 @@ void doBattle() {
 
         case 2:
             // Angriff mit Schlenker links
-            // noch nicht implementiert
+
+            nAttackCounter++; // Anzahl durchgeführter Angriffe
+
+            nSpeed = int(MAX_SPEED / 2); // halbe Kraft voraus
+
+            // drehe den Roboter nach links
+            turnRobot(LEFT, 250);
+            
+            startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
+            delay(500);
+
+            // drehe den Roboter nach rechts
+            turnRobot(RIGHT, 250);
+
+            startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
+            delay(500);
+
+            // drehe den Roboter nach rechts
+            turnRobot(RIGHT, 250);
+
+            nSpeed = MAX_SPEED; // volle Kraft voraus
+            startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
+            delay(800);
+
+            stopMotors(FORWARD);
+
+            nBattleState = 4; // rückwärts fahren
+            
             break;
 
         case 3:
             // Angriff mit Schlenker rechts
-            // noch nicht implementiert
+
+            nAttackCounter++; // Anzahl durchgeführter Angriffe
+
+            nSpeed = int(MAX_SPEED / 2); // halbe Kraft voraus
+
+            // drehe den Roboter nach rechts
+            turnRobot(RIGHT, 250);
+            
+            startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
+            delay(500);
+
+            // drehe den Roboter nach links
+            turnRobot(LEFT, 250);
+
+            startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
+            delay(500);
+
+            // drehe den Roboter nach links
+            turnRobot(LEFT, 250);
+
+            nSpeed = MAX_SPEED;
+            startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
+            delay(800);
+
+            stopMotors(FORWARD);
+
+            nBattleState = 0; // lauern
+
             break;
 
         case 4:
@@ -953,7 +1025,7 @@ void doBattle() {
             nSpeed = 100;
             startMotors(BACKWARD, nSpeed, BACKWARD, nSpeed);
             delay(800);
-            
+
             stopMotors(BACKWARD);
 
             nBattleState = 0;
@@ -964,7 +1036,7 @@ void doBattle() {
 
             // Beginn der Suchfahrt merken
             timeOfLastDistanceMeasurement = millis();
-            
+
             nSpeed = 80;
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
 
@@ -1006,13 +1078,13 @@ void doBattle() {
 // Diese Funktionen sind abhängig von den Abschnitten MOTOR, SERVO und ULTRASONIC
 
 /**
- * Die Funktion versucht, den Roboter so zu steuern, dass er nicht 
+ * Die Funktion versucht, den Roboter so zu steuern, dass er nicht
  * gegen Hindernisse prallt.
- * 
+ *
  */
 void avoidObstacles() {
 
-    int nDistance = getDistance(); 
+    int nDistance = getDistance();
 
     if (DEBUG) {
         // Serial.print("Distance to object: ");
@@ -1022,13 +1094,13 @@ void avoidObstacles() {
     showDistance(nDistance);
 
     int nSpeed = 0;
-    if (digitalRead(BUMPER_PIN) == LOW) {
+    if (digitalRead(JOYSTICK_SWITCH_PIN) == LOW) {
         // Zusammenstoß mit Hindernis erkannt. Ausweichen
 
         stopMotors(FORWARD);
 
         delay(250);
-        startMotors(BACKWARD, 128, BACKWARD, 128); 
+        startMotors(BACKWARD, 128, BACKWARD, 128);
         delay(750);
         stopMotor(MOTOR_A);
         delay(250);
@@ -1051,7 +1123,7 @@ void avoidObstacles() {
 
         // Abstand in verschiedene Richtungen messen und in eine freie
         // Richtung drehen.
-        
+
         // links frei?
         startServo2(60);
         delay(DETACH_DELAY_SERVO_2);
@@ -1096,7 +1168,7 @@ void avoidObstacles() {
 /**
  * Manuelle Steuerung des RoBat, über die Joystick-Positionen wird die
  * Geschwindigkeit und Drehrichtung der Motoren gesteuert.
- * 
+ *
  */
 void manualControl() {
 
@@ -1114,8 +1186,8 @@ void manualControl() {
     int nMotorDir = STOP; // default
 
     // Wird der Joystick nach hinten gedrückt (nJoyPosV < JOY_MIDDLE_MIN),
-    // soll sich der Roboter rückwärts bewegen. WIrd der Joystick nach
-    // vorne gedrückt (nJoyPosV > JOY_MIDDLE_MAX), bewegt sich der Roboter 
+    // soll sich der Roboter rückwärts bewegen. Wird der Joystick nach
+    // vorne gedrückt (nJoyPosV > JOY_MIDDLE_MAX), bewegt sich der Roboter
     // vorwärts.
 
     if (nJoyPosV < JOY_MIDDLE_MIN) {
@@ -1124,9 +1196,9 @@ void manualControl() {
 
         // Motorgeschwindigkeit ist abhängig davon, wie weit der Joystick
         // gedrückt wird.
-        
+
         // für die Rückwärtsfahrt werden die Werte umgekehrt
-        
+
         nJoyPosV = nJoyPosV - JOY_MIDDLE_MIN; // negative Zahlen
         nJoyPosV = nJoyPosV * -1;  // positiv machen
 
@@ -1143,27 +1215,27 @@ void manualControl() {
     }
     else {
         // anhalten
-        
+
         nMotorSpeed1 = 0;
         nMotorSpeed2 = 0;
     }
 
     // Steuerung links und rechts
 
-    // Die horizontale Joystickposition beeinflusst die Motorgeschwindigkeit    
+    // Die horizontale Joystickposition beeinflusst die Motorgeschwindigkeit
 
     if (nJoyPosH < JOY_MIDDLE_MIN) {
         // links
-        
+
         // Bei der Bewegung nach links werden die Werte umgekehrt
-        
+
         nJoyPosH = nJoyPosH - JOY_MIDDLE_MIN; // negative Zahlen
         nJoyPosH = nJoyPosH * -1;  // positiv machen
 
-        // Die Werte vom Joystick liegen zwischen 0 und 1023. Sie werden 
+        // Die Werte vom Joystick liegen zwischen 0 und 1023. Sie werden
         // auf den Bereich der Motorgeschwindigkeit von 0 bis MAX_SPEED
         // abgebildet.
-        
+
         nJoyPosH = map(nJoyPosH, 0, JOY_MIDDLE_MIN, 0, MAX_SPEED);
 
         // Motorgeschwindigkeiten setzen
@@ -1181,7 +1253,7 @@ void manualControl() {
     else if (nJoyPosH > JOY_MIDDLE_MAX) {
         // rechts
 
-        // Die Werte vom Joystick liegen zwischen 0 und 1023. Sie werden 
+        // Die Werte vom Joystick liegen zwischen 0 und 1023. Sie werden
         // auf den Bereich der Motorgeschwindigkeit von 0 bis MAX_SPEED
         // abgebildet.
 
@@ -1200,7 +1272,7 @@ void manualControl() {
         }
     }
 
-    // bei sehr niedrigen Motorgeschwindigkeiten laufen die Motoren 
+    // bei sehr niedrigen Motorgeschwindigkeiten laufen die Motoren
     // nicht an, manchmal entsteht ein summendes Geräusch. Das wird hier
     // unterdrückt.
 
@@ -1226,8 +1298,8 @@ void manualControl() {
 
     FastLED.show();
 
-    // Motorgeschwindigkeiten setzen    
-    
+    // Motorgeschwindigkeiten setzen
+
     // startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB);
     startMotors(nMotorDir, nMotorSpeed1, nMotorDir, nMotorSpeed2);
 
@@ -1236,20 +1308,145 @@ void manualControl() {
 // --- END FUNCTIONS MANUAL_CONTROL ---
 
 
+// --- BEGIN FUNCTIONS SERIAL COMMANDS ---
+
+void doSerialCommand() {
+  // when in manual mode only check for the command
+  // to switch to serial command mode
+  if (MANUAL == nMode) {
+    if ((true == stringComplete) && (inputString.substring(0,6) == "sercmd")) {
+      Serial.println("SERCMD");
+      nMode = SERIALCMD;
+    }
+    return;
+  }
+  // otherwise check for timeout
+  else if (millis() > nLastCmd + nMotorTimeout) {
+    Serial.println("stopping motors due to timeout");
+    // stop motors
+    Serial.end();
+    stopMotor(MOTOR_A);
+    stopMotor(MOTOR_B);
+    delay(20);
+    Serial.begin(SERIALSPEED);
+    nLastCmd = millis();
+  }
+
+  if (stringComplete) {
+
+    Serial.print("rec:");
+    Serial.print(inputString);
+    // Serial.println(".");
+
+    int nSpeed = 0;
+    int nMinSpeed = 50; // Anlaufgeschwindigkeit der Motoren
+    int nMotor = 0;
+    int nDir = FORWARD;
+    boolean bSetMotors = false;
+
+    // --- set mode ---
+    if (inputString.substring(0,6) == "mancmd") {
+      Serial.println("MANCMD");
+      nMode = MANUAL;
+      // stop motors
+      Serial.end();
+      stopMotor(MOTOR_A);
+      stopMotor(MOTOR_B);
+      delay(20);
+      Serial.begin(SERIALSPEED);
+    }
+    // --- left motor forward ---
+    else if (inputString.substring(0,2) == "lf") {
+      nSpeed = inputString.substring(2,5).toInt();
+      nSpeed = max(min(nSpeed, MAX_SPEED), nMinSpeed);
+      nMotor = MOTOR_A;
+      nDir = FORWARD;
+      bSetMotors = true;
+    }
+    // --- left motor backward ---
+    else if (inputString.substring(0,2) == "lb") {
+      nSpeed = inputString.substring(2,5).toInt();
+      nSpeed = max(min(nSpeed, MAX_SPEED), nMinSpeed);
+      nMotor = MOTOR_A;
+      nDir = BACKWARD;
+      bSetMotors = true;
+    }
+    // --- right motor forward ---
+    else if (inputString.substring(0,2) == "rf") {
+      nSpeed = inputString.substring(2,5).toInt();
+      nSpeed = max(min(nSpeed, MAX_SPEED), nMinSpeed);
+      nMotor = MOTOR_B;
+      nDir = FORWARD;
+      bSetMotors = true;
+    }
+    // --- right motor backward ---
+    else if (inputString.substring(0,2) == "rb") {
+      nSpeed = inputString.substring(2,5).toInt();
+      nSpeed = max(min(nSpeed, MAX_SPEED), nMinSpeed);
+      nMotor = MOTOR_B;
+      nDir = BACKWARD;
+      bSetMotors = true;
+    }
+    // --- stop motors ---
+    else if (inputString.substring(0,2) == "st") {
+      nSpeed = 0;
+      bSetMotors = true;
+    }
+
+    if (true == bSetMotors) {
+      if (nSpeed > 0) {
+        Serial.end();
+        startMotor(nMotor, nDir, nSpeed);
+        delay(20);
+        Serial.begin(SERIALSPEED);
+      }
+      else {
+        // stop
+        Serial.end();
+        stopMotor(MOTOR_A);
+        stopMotor(MOTOR_B);
+        delay(20);
+        Serial.begin(SERIALSPEED);
+      }
+    }
+
+    // clear the string:
+    inputString = "";
+    stringComplete = false;
+    nLastCmd = millis();
+  }
+
+
+}
+
+// --- END FUNCTIONS SERIAL COMMANDS ---
+
+
 void setup() {
 
 // --- BEGIN SETUP GENERAL ---
 
     // Serielle Schnittstelle konfigurieren
-    Serial.begin(115200);
+    Serial.begin(SERIALSPEED);
 
 // --- END SETUP GENERAL ---
+
+
+// --- BEGIN SETUP SERIAL COMMAND ---
+
+// reserve 200 bytes for the inputString:
+inputString.reserve(200);
+
+// --- END SETUP SERIAL COMMAND ---
 
 
 // --- BEGIN SETUP BUMPER ---
 
     // Kollisionserkennung
-    pinMode(BUMPER_PIN, INPUT_PULLUP);
+    pinMode(JOYSTICK_SWITCH_PIN, INPUT_PULLUP);
+    pinMode(BUMPER1_PIN, INPUT_PULLUP);
+    pinMode(BUMPER2_PIN, INPUT_PULLUP);
+
 
 // --- END SETUP BUMPER ---
 
@@ -1260,7 +1457,7 @@ void setup() {
     pinMode(SERVO_2_PIN, OUTPUT);
 
     // Servos beim Start hin und her bewegen (Funktionstest)
-    
+
     startServo2(90);
     startServo1(90);
     delay(500);
@@ -1334,35 +1531,64 @@ void setup() {
 // --- END SETUP MOTOR ---
 
 
-// --- BEGIN SETUP AUTOMANUAL ---
+// --- BEGIN SETUP MODE ---
 
-    // Betriebsmodus über den Abstand zum nächsten Objekt bestimmen
-    
+    // # Betriebsmodus bestimmen
+    //
+    // Es gibt vier Betriebsmodi:
+    //
+    // - MANUAL: Steuerung mit dem Joystick
+    // - AUTONOMOUS: RoBat fährt und versucht Hindernisse zu vermeiden
+    // - BATTLE: RoBat sucht Hindernisse und rammt sie
+    // - SERIALCMD: RoBat wird über die serielle Schnittstelle mit Kommandos gesteuert
+
+    // Beim Einschalten wird der Betriebsmodus über den Abstand zum nächsten Objekt
+    // und den Zustand des Joystick-Knopfs bzw. der Fühler bestimmt.
+
+    // Der Anschluss des Joysticks ist optional.
+    // Der Ultraschallsensor kann fehlen. In diesem Fall liefert die Abfrage der
+    // Entfernung getDistance() 0 zurück.
+
+    // Beim Einschalten soll RoBat aktiv sein, wenn keine Handsteuerung gewünscht wird.
+    // Ohne Ultraschallsensor ist autonomes Fahren nur sinnvoll, wenn zwei Fühler
+    // vorhanden sind, die Kollisionen feststellen können.
+
+    // Der MANUAL Modus kann mit dem Kommando "sercmd" über die serielle Schnittstelle
+    // in den Modus SERIALCMD überführt werden.
+
+    // Joystick-Knopf gedrückt: MANUAL
     // Abstand < 10cm: MANUAL
-    // Abstand >= 10cm und <= 30cm: Hindernisvermeidung
-    // Abstand > 30cm: Battle-Modus
+    // Abstand >= 10cm und <= 50cm: Battle-Modus
+    // Abstand > 50cm: Hindernisvermeidung
 
-    // falls der Joystick Button beim Einschalten gedrückt wird, ist der 
-    // Modus ebenfalls MANUAL    
-    
-    int nDistance = getDistance(); 
-    int bButtonPressed = digitalRead(BUMPER_PIN);
+    // falls der Joystick Button beim Einschalten gedrückt wird, ist der
+    // Modus ebenfalls MANUAL
+
+    // Wenn beide Fühler vorhanden und gedrückt sind, wird der Modus BATTLE verwendet.
+
+    int nDistance = getDistance();
+    int bButtonPressed = digitalRead(JOYSTICK_SWITCH_PIN);
+    int bBumper1 = digitalRead(BUMPER1_PIN);
+    int bBumper2 = digitalRead(BUMPER2_PIN);
 
     if (LOW == bButtonPressed) {
-        nMode = MANUAL; 
+        nMode = MANUAL;
     }
     else if (nDistance < 10) {
         nMode = MANUAL;
     }
-    else if (nDistance < 30) {
-        nMode = AUTONOMOUS;
-    }
-    else {
+    else if (nDistance < 50) {
         nMode = BATTLE;
     }
+    else if ((LOW == bBumper1) && (LOW == bBumper2)) {
+        nMode = BATTLE;
+    }
+    else {
+        nMode = AUTONOMOUS;
+    }
 
 
-// --- BEGIN SETUP AUTOMANUAL ---
+// --- BEGIN SETUP MODE ---
 
 
 // --- BEGIN SETUP WS2811 ---
@@ -1403,7 +1629,7 @@ void setup() {
         delay(50);
     }
 
-    // Betriebsmodus mit Farben anzeigen 
+    // Betriebsmodus mit Farben anzeigen
     switch (nMode) {
         case AUTONOMOUS:
             leds[1] = CRGB::Red;
@@ -1459,7 +1685,7 @@ void setup() {
 
 // --- BEGIN SETUP JOYSTICK ---
 
-    // Das Setzen der Pins für den Joystick auf den Default INPUT 
+    // Das Setzen der Pins für den Joystick auf den Default INPUT
     // stört die Ansteuerung der Motoren, daher auf Default lassen.
 
     // pinMode(joyVert, INPUT);
@@ -1474,7 +1700,9 @@ void loop() {
 // --- BEGIN LOOP MOTOR ---
 
     // Handlung entsprechend dem Betriebsmodus ausführen
-    
+
+    // nMode = SERIALCMD;
+
     switch (nMode) {
         case AUTONOMOUS:
             avoidObstacles();
@@ -1484,20 +1712,48 @@ void loop() {
             doBattle();
             break;
 
+        case SERIALCMD:
+            doSerialCommand();
+            break;
+
         case MANUAL:
             default:
             manualControl();
+            doSerialCommand();
     }
 
 // --- END LOOP MOTOR ---
 
 
 // --- BEGIN LOOP SERVO ---
-    
+
     // Servo 1 hin und her bewegen
     moveServoBackForth();
 
 // --- END LOOP SERVO ---
 
 
+}
+
+
+/*
+  SerialEvent occurs whenever a new data comes in the hardware serial RX. This
+  routine is run between each time loop() runs, so using delay inside loop can
+  delay response. Multiple bytes of data may be available.
+
+  See https://www.arduino.cc/en/Tutorial/SerialEvent
+*/
+void serialEvent() {
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar = (char)Serial.read();
+    // add it to the inputString:
+      inputString += inChar;
+    // if the incoming character is a newline, set a flag so the main loop can
+    // do something about it:
+    if (inChar == '\n') {
+      stringComplete = true;
+    }
+
+  }
 }
