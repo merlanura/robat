@@ -7,7 +7,7 @@
  * Michael Ibsen
  * ibsen@gmx.net
  *
- * 2021-09-03
+ * 2021-09-07
  *
  * License: GNU GPLv3
  * http://www.gnu.de/documents/gpl.de.html
@@ -110,6 +110,14 @@ int nAttackCounter = 0;
 #define NOTE_G4 392
 #define NOTE_A4 440
 #define NOTE_H4 494
+
+#define NOTE_C5 523
+#define NOTE_D5 587
+#define NOTE_E5 659
+#define NOTE_F5 698
+#define NOTE_G5 784
+#define NOTE_A5 880
+#define NOTE_H5 988
 
 // Notenlängen (in ms)
 #define GANZE 1000
@@ -1094,10 +1102,23 @@ void avoidObstacles() {
     showDistance(nDistance);
 
     int nSpeed = 0;
-    if (digitalRead(JOYSTICK_SWITCH_PIN) == LOW) {
+
+    // Kollisionserkennung über die Schalter links und rechts vorne
+    // (falls vorhanden) 
+    int bBumper1 = digitalRead(BUMPER1_PIN);
+    int bBumper2 = digitalRead(BUMPER2_PIN);
+    
+    if (digitalRead(BUMPER1_PIN) == LOW) {
         // Zusammenstoß mit Hindernis erkannt. Ausweichen
 
         stopMotors(FORWARD);
+
+        // Zustand durch Töne signalisieren
+        TimerFreeTone(TONE_PIN, NOTE_A3, 160);
+        TimerFreeTone(TONE_PIN, NOTE_PAUSE, 160);
+        TimerFreeTone(TONE_PIN, NOTE_A4, 80);
+        TimerFreeTone(TONE_PIN, NOTE_PAUSE, 80);
+        TimerFreeTone(TONE_PIN, NOTE_A5, 80);
 
         delay(250);
         startMotors(BACKWARD, 128, BACKWARD, 128);
@@ -1105,8 +1126,28 @@ void avoidObstacles() {
         stopMotor(MOTOR_A);
         delay(250);
         stopMotor(MOTOR_B);
+        
     }
-    else if (nDistance > 10) {
+    else if (digitalRead(BUMPER2_PIN) == LOW) {
+        // Zusammenstoß mit Hindernis erkannt. Ausweichen
+
+        stopMotors(FORWARD);
+
+        // Zustand durch Töne signalisieren
+        TimerFreeTone(TONE_PIN, NOTE_A5, 80);
+        TimerFreeTone(TONE_PIN, NOTE_PAUSE, 80);
+        TimerFreeTone(TONE_PIN, NOTE_A4, 80);
+        TimerFreeTone(TONE_PIN, NOTE_PAUSE, 160);
+        TimerFreeTone(TONE_PIN, NOTE_A3, 160);
+
+        delay(250);
+        startMotors(BACKWARD, 128, BACKWARD, 128);
+        delay(750);
+        stopMotor(MOTOR_B);
+        delay(250);
+        stopMotor(MOTOR_A);
+    }
+    else if (nDistance > 15) {
         // ausreichender Abstand zum nächsten Objekt
         // geradeaus fahren
         nSpeed = map(nDistance, 15, 150, 80, 128);
