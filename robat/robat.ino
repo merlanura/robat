@@ -295,7 +295,7 @@ int nPrevMotorSpeed2 = 0;
 
 // Maximale Geschwindigkeit der beiden Motoren
 // MAX_SPEED 0..255
-#define MAX_SPEED 196
+#define MAX_SPEED 255
 
 // Motor A / B (linker Motor / rechter Motor)
 #define MOTOR_A 0
@@ -1122,9 +1122,9 @@ void avoidObstacles() {
 
         delay(250);
         startMotors(BACKWARD, 128, BACKWARD, 128);
-        delay(750);
-        stopMotor(MOTOR_A);
         delay(250);
+        stopMotor(MOTOR_A);
+        delay(1500);
         stopMotor(MOTOR_B);
         
     }
@@ -1142,15 +1142,17 @@ void avoidObstacles() {
 
         delay(250);
         startMotors(BACKWARD, 128, BACKWARD, 128);
-        delay(750);
+        delay(500);
         stopMotor(MOTOR_B);
-        delay(250);
+        delay(1250);
         stopMotor(MOTOR_A);
     }
     else if (nDistance > 15) {
         // ausreichender Abstand zum nächsten Objekt
         // geradeaus fahren
-        nSpeed = map(nDistance, 15, 150, 80, 128);
+        // Bilde die Entfernungen 15cm bis 150cm auf 
+        // die Geschwindigkeiten 80 bis MAX_SPEED ab.
+        nSpeed = min(map(nDistance, 15, 150, 80, MAX_SPEED), MAX_SPEED);
         startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
     }
     else {
