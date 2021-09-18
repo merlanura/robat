@@ -7,7 +7,7 @@
  * Michael Ibsen
  * ibsen@gmx.net
  *
- * 2021-09-07
+ * 2021-09-17
  *
  * License: GNU GPLv3
  * http://www.gnu.de/documents/gpl.de.html
@@ -41,7 +41,7 @@
 // - manuelle Steuerung (MANUAL)
 // - Hindernisvermeidung (AUTONOMOUS)
 // - Hebocon- / Kampf (BATTLE)
-// - Steuerung durch externe Controller über serielle Scnittstelle (SERIAL)
+// - Steuerung durch externe Controller über serielle Schnittstelle (SERIAL)
 
 #define MANUAL 0
 #define AUTONOMOUS 1
@@ -234,7 +234,7 @@ int targetPositionServo2 = 0;
 
 #define TRIGGER_PIN  15  // Trigger Signal an den Ultraschallsensor
 #define ECHO_PIN     14  // Echo Antwort vom Ultraschallsensor
-#define MAX_DISTANCE 100 // Begrenzung der max. Distanz auf 100cm
+#define MAX_DISTANCE 200 // Begrenzung der max. Distanz auf 200cm
 
 unsigned long timeOfLastDistanceMeasurement = millis();
 
@@ -294,8 +294,8 @@ int nPrevMotorSpeed1 = 0;
 int nPrevMotorSpeed2 = 0;
 
 // Maximale Geschwindigkeit der beiden Motoren
-// MAX_SPEED 0..255
-#define MAX_SPEED 255
+// nMaxSpeed 0..255
+int nMaxSpeed = 255;
 
 // Motor A / B (linker Motor / rechter Motor)
 #define MOTOR_A 0
@@ -333,12 +333,18 @@ int nJoyPosH = 512;
 
 // --- BEGIN INIT SERIAL COMMANDS ---
 
-#define SERIALSPEED 57600
+#define SERIALSPEED 38400
 
-String inputString = "";         // a String to hold incoming data
-bool stringComplete = false;  // whether the string is complete
-// turn off motors after nMotorTimeout ms without receiving a serial command
-unsigned long nMotorTimeout = 5000;
+// String für eingehende serielle Zeichen
+String strSerialInput = ""; 
+
+// wird bei Eintreffen von \n oder \r auf true gesetzt
+bool bSerialComplete = false; 
+
+// Die Motoren werden nach einer Zeit ohne serielle Kommandos
+// ausgeschaltet. Dadurch hält der Roboter an, wenn die serielle
+// Verbindung abbricht.
+unsigned long nMotorTimeout = 400; // ms
 unsigned long nLastCmd = millis();
 
 // --- END INIT SERIAL COMMANDS ---
@@ -616,7 +622,7 @@ void setMotorDir(int nMotor, int nDir) {
  *
  * @param int nMotor: Auswahl des Motors, 0 - Motor A, 1 - Motor B
  * @param int nDir: Drehrichtung, 0 - vorwärts, 1 - rückwärts
- * @param int nSpeed: Geschwindigkeit (0..255), wird durch MAX_SPEED begrenzt
+ * @param int nSpeed: Geschwindigkeit (0..255), wird durch nMaxSpeed begrenzt
  *
  */
 void startMotor(int nMotor, int nDir, int nSpeed) {
@@ -632,8 +638,8 @@ void startMotor(int nMotor, int nDir, int nSpeed) {
         Serial.println(nSpeed);
     }
 
-    // Geschwindigkeit auf 0 .. MAX_SPEED begrenzen
-    nSpeed = max(0, min(nSpeed, MAX_SPEED));
+    // Geschwindigkeit auf 0 .. nMaxSpeed begrenzen
+    nSpeed = max(0, min(nSpeed, nMaxSpeed));
 
     setMotorDir(nMotor, nDir);
 
@@ -947,7 +953,7 @@ void doBattle() {
 
             nAttackCounter++; // Anzahl durchgeführter Angriffe
 
-            nSpeed = MAX_SPEED; // volle Kraft voraus
+            nSpeed = nMaxSpeed; // volle Kraft voraus
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(1000);
 
@@ -968,7 +974,7 @@ void doBattle() {
 
             nAttackCounter++; // Anzahl durchgeführter Angriffe
 
-            nSpeed = int(MAX_SPEED / 2); // halbe Kraft voraus
+            nSpeed = int(nMaxSpeed / 2); // halbe Kraft voraus
 
             // drehe den Roboter nach links
             turnRobot(LEFT, 250);
@@ -985,7 +991,7 @@ void doBattle() {
             // drehe den Roboter nach rechts
             turnRobot(RIGHT, 250);
 
-            nSpeed = MAX_SPEED; // volle Kraft voraus
+            nSpeed = nMaxSpeed; // volle Kraft voraus
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(800);
 
@@ -1000,7 +1006,7 @@ void doBattle() {
 
             nAttackCounter++; // Anzahl durchgeführter Angriffe
 
-            nSpeed = int(MAX_SPEED / 2); // halbe Kraft voraus
+            nSpeed = int(nMaxSpeed / 2); // halbe Kraft voraus
 
             // drehe den Roboter nach rechts
             turnRobot(RIGHT, 250);
@@ -1017,7 +1023,7 @@ void doBattle() {
             // drehe den Roboter nach links
             turnRobot(LEFT, 250);
 
-            nSpeed = MAX_SPEED;
+            nSpeed = nMaxSpeed;
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(800);
 
@@ -1151,8 +1157,8 @@ void avoidObstacles() {
         // ausreichender Abstand zum nächsten Objekt
         // geradeaus fahren
         // Bilde die Entfernungen 15cm bis 150cm auf 
-        // die Geschwindigkeiten 80 bis MAX_SPEED ab.
-        nSpeed = min(map(nDistance, 15, 150, 80, MAX_SPEED), MAX_SPEED);
+        // die Geschwindigkeiten 80 bis nMaxSpeed ab.
+        nSpeed = min(map(nDistance, 15, 150, 80, nMaxSpeed), nMaxSpeed);
         startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
     }
     else {
@@ -1233,7 +1239,16 @@ void manualControl() {
     // vorne gedrückt (nJoyPosV > JOY_MIDDLE_MAX), bewegt sich der Roboter
     // vorwärts.
 
-    if (nJoyPosV < JOY_MIDDLE_MIN) {
+    // Wenn der Joystick nicht angeschlossen ist, liefern die Eingänge
+    // zufällige Werte. In diesem Fall sollten die beiden Eingänge auf 
+    // GND gelegt werden, dann liefern sie einen Wert von 0.
+
+    if ((0 == nJoyPosV) && (0 == nJoyPosH)) {
+        // kein Joystick angeschlossen
+        nMotorSpeed1 = 0;
+        nMotorSpeed2 = 0;
+    }
+    else if (nJoyPosV < JOY_MIDDLE_MIN) {
         // rückwärts
         nMotorDir = BACKWARD;
 
@@ -1245,16 +1260,16 @@ void manualControl() {
         nJoyPosV = nJoyPosV - JOY_MIDDLE_MIN; // negative Zahlen
         nJoyPosV = nJoyPosV * -1;  // positiv machen
 
-        nMotorSpeed1 = map(nJoyPosV, 0, JOY_MIDDLE_MIN, 0, MAX_SPEED);
-        nMotorSpeed2 = map(nJoyPosV, 0, JOY_MIDDLE_MIN, 0, MAX_SPEED);
+        nMotorSpeed1 = map(nJoyPosV, 0, JOY_MIDDLE_MIN, 0, nMaxSpeed);
+        nMotorSpeed2 = map(nJoyPosV, 0, JOY_MIDDLE_MIN, 0, nMaxSpeed);
     }
     else if (nJoyPosV > JOY_MIDDLE_MAX) {
         // vorwärts
         nMotorDir = FORWARD;
 
         // Motorgeschwindigkeit ermitteln
-        nMotorSpeed1 = map(nJoyPosV, JOY_MIDDLE_MAX, 1023, 0, MAX_SPEED);
-        nMotorSpeed2 = map(nJoyPosV, JOY_MIDDLE_MAX, 1023, 0, MAX_SPEED);
+        nMotorSpeed1 = map(nJoyPosV, JOY_MIDDLE_MAX, 1023, 0, nMaxSpeed);
+        nMotorSpeed2 = map(nJoyPosV, JOY_MIDDLE_MAX, 1023, 0, nMaxSpeed);
     }
     else {
         // anhalten
@@ -1267,7 +1282,12 @@ void manualControl() {
 
     // Die horizontale Joystickposition beeinflusst die Motorgeschwindigkeit
 
-    if (nJoyPosH < JOY_MIDDLE_MIN) {
+    if ((0 == nJoyPosV) && (0 == nJoyPosH)) {
+        // kein Joystick angeschlossen
+        nMotorSpeed1 = 0;
+        nMotorSpeed2 = 0;
+    }
+    else if (nJoyPosH < JOY_MIDDLE_MIN) {
         // links
 
         // Bei der Bewegung nach links werden die Werte umgekehrt
@@ -1276,10 +1296,10 @@ void manualControl() {
         nJoyPosH = nJoyPosH * -1;  // positiv machen
 
         // Die Werte vom Joystick liegen zwischen 0 und 1023. Sie werden
-        // auf den Bereich der Motorgeschwindigkeit von 0 bis MAX_SPEED
+        // auf den Bereich der Motorgeschwindigkeit von 0 bis nMaxSpeed
         // abgebildet.
 
-        nJoyPosH = map(nJoyPosH, 0, JOY_MIDDLE_MIN, 0, MAX_SPEED);
+        nJoyPosH = map(nJoyPosH, 0, JOY_MIDDLE_MIN, 0, nMaxSpeed);
 
         // Motorgeschwindigkeiten setzen
         nMotorSpeed1 = nMotorSpeed1 - nJoyPosH;
@@ -1289,26 +1309,26 @@ void manualControl() {
         if (nMotorSpeed1 < 0) {
             nMotorSpeed1 = 0;
         }
-        if (nMotorSpeed2 > MAX_SPEED) {
-            nMotorSpeed2 = MAX_SPEED;
+        if (nMotorSpeed2 > nMaxSpeed) {
+            nMotorSpeed2 = nMaxSpeed;
         }
     }
     else if (nJoyPosH > JOY_MIDDLE_MAX) {
         // rechts
 
         // Die Werte vom Joystick liegen zwischen 0 und 1023. Sie werden
-        // auf den Bereich der Motorgeschwindigkeit von 0 bis MAX_SPEED
+        // auf den Bereich der Motorgeschwindigkeit von 0 bis nMaxSpeed
         // abgebildet.
 
-        nJoyPosH = map(nJoyPosH, JOY_MIDDLE_MAX, 1023, 0, MAX_SPEED);
+        nJoyPosH = map(nJoyPosH, JOY_MIDDLE_MAX, 1023, 0, nMaxSpeed);
 
         // Motorgeschwindigkeiten setzen
         nMotorSpeed1 = nMotorSpeed1 + nJoyPosH;
         nMotorSpeed2 = nMotorSpeed2 - nJoyPosH;
 
         // Motorgeschwindigkeit im erlaubten Bereich halten
-        if (nMotorSpeed1 > MAX_SPEED) {
-            nMotorSpeed1 = MAX_SPEED;
+        if (nMotorSpeed1 > nMaxSpeed) {
+            nMotorSpeed1 = nMaxSpeed;
         }
         if (nMotorSpeed2 < 0) {
             nMotorSpeed2 = 0;
@@ -1342,8 +1362,6 @@ void manualControl() {
     FastLED.show();
 
     // Motorgeschwindigkeiten setzen
-
-    // startMotors(int nDirA, int nSpeedA, int nDirB, int nSpeedB);
     startMotors(nMotorDir, nMotorSpeed1, nMotorDir, nMotorSpeed2);
 
 }
@@ -1353,109 +1371,141 @@ void manualControl() {
 
 // --- BEGIN FUNCTIONS SERIAL COMMANDS ---
 
+/**
+ * Verarbeitet Kommandos, die über die serielle Schnittstelle
+ * empfangen werden. 
+ * 
+ */
 void doSerialCommand() {
-  // when in manual mode only check for the command
-  // to switch to serial command mode
-  if (MANUAL == nMode) {
-    if ((true == stringComplete) && (inputString.substring(0,6) == "sercmd")) {
-      Serial.println("SERCMD");
-      nMode = SERIALCMD;
+
+  // Im SERIALCMD Modus immer zuerst prüfen, ob der Timeout abgelaufen ist.
+  // Der Timeout verhindert, dass der Robotor unkontrollierbar wird, wenn
+  // die serielle Verbindung unterbrochen wird. Nach Ablauf des Timeouts
+  // hält der Roboter an.
+  if (SERIALCMD == nMode) {
+    if (millis() > nLastCmd + nMotorTimeout) {
+      Serial.println("timeout stop");
+      // Motoren anhalten
+      stopMotor(MOTOR_A);
+      stopMotor(MOTOR_B);
+
+      nLastCmd = millis();
+      return;
     }
-    return;
-  }
-  // otherwise check for timeout
-  else if (millis() > nLastCmd + nMotorTimeout) {
-    Serial.println("stopping motors due to timeout");
-    // stop motors
-    Serial.end();
-    stopMotor(MOTOR_A);
-    stopMotor(MOTOR_B);
-    delay(20);
-    Serial.begin(SERIALSPEED);
-    nLastCmd = millis();
   }
 
-  if (stringComplete) {
+  // prüfen, ob ein serielles Kommando bereitsteht
+  if (bSerialComplete) {
 
-    Serial.print("rec:");
-    Serial.print(inputString);
-    // Serial.println(".");
-
+    if (DEBUG) {
+      Serial.print("rec:");
+      Serial.println(strSerialInput);
+    }
+    
     int nSpeed = 0;
     int nMinSpeed = 50; // Anlaufgeschwindigkeit der Motoren
     int nMotor = 0;
     int nDir = FORWARD;
     boolean bSetMotors = false;
 
-    // --- set mode ---
-    if (inputString.substring(0,6) == "mancmd") {
-      Serial.println("MANCMD");
+    // Modus setzen
+    if (strSerialInput.substring(0,9) == "serialcmd") {
+      Serial.println("serialcmd mode");
+      nMode = SERIALCMD;
+
+      // Motoren anhalten
+      nSpeed = 0;
+      bSetMotors = true;
+    }
+    else if (strSerialInput.substring(0,6) == "manual") {
+      Serial.println("manual mode");
       nMode = MANUAL;
-      // stop motors
-      Serial.end();
-      stopMotor(MOTOR_A);
-      stopMotor(MOTOR_B);
-      delay(20);
-      Serial.begin(SERIALSPEED);
+
+      // Motoren anhalten
+      nSpeed = 0;
+      bSetMotors = true;
     }
-    // --- left motor forward ---
-    else if (inputString.substring(0,2) == "lf") {
-      nSpeed = inputString.substring(2,5).toInt();
-      nSpeed = max(min(nSpeed, MAX_SPEED), nMinSpeed);
+    else if (strSerialInput.substring(0,6) == "battle") {
+      Serial.println("battle mode");
+      nMode = BATTLE;
+      
+      // Motoren anhalten
+      nSpeed = 0;
+      bSetMotors = true;
+    }
+    else if (strSerialInput.substring(0,10) == "autonomous") {
+      Serial.println("autonomous mode");
+      nMode = AUTONOMOUS;
+      
+      // Motoren anhalten
+      nSpeed = 0;
+      bSetMotors = true;
+    }
+    
+    // Distanz zum nächsten Objekt mit dem Ultraschallsensor messen
+    else if (strSerialInput.substring(0,4) == "dist") {
+      int nDistance = getDistance();
+      Serial.println(nDistance);
+    }
+    
+    // linker Motor vorwärts
+    else if (strSerialInput.substring(0,2) == "lf") {
+      nSpeed = strSerialInput.substring(2,5).toInt();
+      nSpeed = max(min(nSpeed, nMaxSpeed), nMinSpeed);
       nMotor = MOTOR_A;
       nDir = FORWARD;
       bSetMotors = true;
     }
-    // --- left motor backward ---
-    else if (inputString.substring(0,2) == "lb") {
-      nSpeed = inputString.substring(2,5).toInt();
-      nSpeed = max(min(nSpeed, MAX_SPEED), nMinSpeed);
+    
+    // linker Motor rückwärts
+    else if (strSerialInput.substring(0,2) == "lb") {
+      nSpeed = strSerialInput.substring(2,5).toInt();
+      nSpeed = max(min(nSpeed, nMaxSpeed), nMinSpeed);
       nMotor = MOTOR_A;
       nDir = BACKWARD;
       bSetMotors = true;
     }
-    // --- right motor forward ---
-    else if (inputString.substring(0,2) == "rf") {
-      nSpeed = inputString.substring(2,5).toInt();
-      nSpeed = max(min(nSpeed, MAX_SPEED), nMinSpeed);
+    
+    // rechter Motor vorwärts
+    else if (strSerialInput.substring(0,2) == "rf") {
+      nSpeed = strSerialInput.substring(2,5).toInt();
+      nSpeed = max(min(nSpeed, nMaxSpeed), nMinSpeed);
       nMotor = MOTOR_B;
       nDir = FORWARD;
       bSetMotors = true;
     }
-    // --- right motor backward ---
-    else if (inputString.substring(0,2) == "rb") {
-      nSpeed = inputString.substring(2,5).toInt();
-      nSpeed = max(min(nSpeed, MAX_SPEED), nMinSpeed);
+    
+    // rechter Motor rückwärts
+    else if (strSerialInput.substring(0,2) == "rb") {
+      nSpeed = strSerialInput.substring(2,5).toInt();
+      nSpeed = max(min(nSpeed, nMaxSpeed), nMinSpeed);
       nMotor = MOTOR_B;
       nDir = BACKWARD;
       bSetMotors = true;
     }
-    // --- stop motors ---
-    else if (inputString.substring(0,2) == "st") {
+    
+    // Motoren anhalten
+    else if (strSerialInput.substring(0,2) == "st") {
       nSpeed = 0;
       bSetMotors = true;
     }
 
     if (true == bSetMotors) {
-      if (nSpeed > 0) {
-        Serial.end();
-        startMotor(nMotor, nDir, nSpeed);
-        delay(20);
-        Serial.begin(SERIALSPEED);
-      }
-      else {
-        // stop
-        Serial.end();
+      // Die Motoren werden in jedem Modus angehalten,
+      // aber nur im SERIALCMD Modus gestartet
+      if (nSpeed == 0) {
         stopMotor(MOTOR_A);
         stopMotor(MOTOR_B);
-        delay(20);
-        Serial.begin(SERIALSPEED);
       }
+      else if ((nSpeed > 0) && (nMode == SERIALCMD)) {
+        startMotor(nMotor, nDir, nSpeed);
+      }
+
     }
 
-    // clear the string:
-    inputString = "";
-    stringComplete = false;
+    // Kommando löschen
+    strSerialInput = "";
+    bSerialComplete = false;
     nLastCmd = millis();
   }
 
@@ -1477,8 +1527,8 @@ void setup() {
 
 // --- BEGIN SETUP SERIAL COMMAND ---
 
-// reserve 200 bytes for the inputString:
-inputString.reserve(200);
+// Puffer für eingehende Kommandos
+strSerialInput.reserve(200);
 
 // --- END SETUP SERIAL COMMAND ---
 
@@ -1489,7 +1539,6 @@ inputString.reserve(200);
     pinMode(JOYSTICK_SWITCH_PIN, INPUT_PULLUP);
     pinMode(BUMPER1_PIN, INPUT_PULLUP);
     pinMode(BUMPER2_PIN, INPUT_PULLUP);
-
 
 // --- END SETUP BUMPER ---
 
@@ -1600,10 +1649,11 @@ inputString.reserve(200);
     // in den Modus SERIALCMD überführt werden.
 
     // Joystick-Knopf gedrückt: MANUAL
-    // Abstand < 10cm: MANUAL
-    // Abstand >= 10cm und <= 50cm: Battle-Modus
-    // Abstand > 50cm: Hindernisvermeidung
-
+    // Abstand > 0 und < 10cm: MANUAL
+    // Abstand >= 10cm und < 50cm: Battle-Modus
+    // Abstand >= 50cm und < 100cm: Hindernisvermeidung
+    // sonst: Steuerung über serielle Schnittstelle
+    
     // falls der Joystick Button beim Einschalten gedrückt wird, ist der
     // Modus ebenfalls MANUAL
 
@@ -1617,17 +1667,19 @@ inputString.reserve(200);
     if (LOW == bButtonPressed) {
         nMode = MANUAL;
     }
-    else if (nDistance < 10) {
+    else if ((nDistance > 0) && (nDistance < 10)) {
         nMode = MANUAL;
     }
-    else if (nDistance < 50) {
+    else if ((nDistance >= 10) && (nDistance < 50)) {
         nMode = BATTLE;
     }
     else if ((LOW == bBumper1) && (LOW == bBumper2)) {
         nMode = BATTLE;
     }
-    else {
+    else if ((nDistance >= 50) && (nDistance < 100)) {
         nMode = AUTONOMOUS;
+    } else {
+        nMode = SERIALCMD;
     }
 
 
@@ -1748,10 +1800,12 @@ void loop() {
 
     switch (nMode) {
         case AUTONOMOUS:
+            doSerialCommand();
             avoidObstacles();
             break;
 
         case BATTLE:
+            doSerialCommand();
             doBattle();
             break;
 
@@ -1761,8 +1815,8 @@ void loop() {
 
         case MANUAL:
             default:
-            manualControl();
             doSerialCommand();
+            manualControl();
     }
 
 // --- END LOOP MOTOR ---
@@ -1780,6 +1834,10 @@ void loop() {
 
 
 /*
+  serialEvent() wird immer dann aufgerufen, wenn neue Daten über die serielle 
+  Schnittstelle eintreffen. Der Einsatz von delay() in der loop() kann den
+  Empfang verzögern. 
+  
   SerialEvent occurs whenever a new data comes in the hardware serial RX. This
   routine is run between each time loop() runs, so using delay inside loop can
   delay response. Multiple bytes of data may be available.
@@ -1788,14 +1846,18 @@ void loop() {
 */
 void serialEvent() {
   while (Serial.available()) {
-    // get the new byte:
-    char inChar = (char)Serial.read();
-    // add it to the inputString:
-      inputString += inChar;
-    // if the incoming character is a newline, set a flag so the main loop can
-    // do something about it:
-    if (inChar == '\n') {
-      stringComplete = true;
+    
+    // Zeichen von der seriellen Schnittstelle lesen
+    char chrSerialInput = (char)Serial.read();
+    
+    // ankommende Zeichen zu einem String zusammenfügen
+    strSerialInput += chrSerialInput;
+
+    // ein Zeilenumbruch (LF) oder Zeilenrücklauf (CR) beendet den String.
+    // bSerialComplete wird in der loop() ausgewertet
+    // if ((chrSerialInput == '\n') || (chrSerialInput == '\r')) {
+    if (chrSerialInput == '\n') {
+        bSerialComplete = true;
     }
 
   }
