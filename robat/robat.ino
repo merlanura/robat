@@ -8,7 +8,7 @@
  * Michael Ibsen
  * ibsen@gmx.net
  *
- * 2021-09-17
+ * 2021-12-10
  *
  * License: GNU GPLv3
  * http://www.gnu.de/documents/gpl.de.html
@@ -32,6 +32,16 @@
 // --- BEGIN INIT GENERAL ---
 
 #define DEBUG false
+
+// Wenn ein OLED Display über i2c angeschlossen ist,
+// kann hier HASOLED definiert werden, um Code für 
+// das Display einzubinden. Anderenfalls wird HASOLED
+// entfernt.
+// If RoBat has an OLED display on i2c (pins A4 and A5),
+// define HASOLED here to include code for the display. 
+// Otherwise undefine HASOLED.
+// #define HASOLED true
+#undef HASOLED
 
 // --- END INIT GENERAL ---
 
@@ -72,6 +82,31 @@ int nBattleState = 1;
 int nAttackCounter = 0;
 
 // --- END INIT MODE ---
+
+
+// --- BEGIN INIT OLED ---
+
+#ifdef HASOLED
+
+// OLED Display
+
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define OLED_RESET 4 // not used / nicht genutzt bei diesem Display
+Adafruit_SSD1306 display(OLED_RESET);
+
+#define DRAW_DELAY 118
+#define D_NUM 47
+#define SSD1306_128_64 true
+
+String displaylines[4] = {"Hello there!", "I am RoBat", "",  ""};
+
+#endif
+
+// --- END INIT OLED ---
 
 
 // --- BEGIN INIT BUMPER ---
@@ -468,6 +503,59 @@ unsigned long nMotorTimeout = 400; // ms
 unsigned long nLastCmd = millis();
 
 // --- END INIT SERIAL COMMANDS ---
+
+
+// --- BEGIN FUNCTIONS OLED ---
+
+#ifdef HASOLED
+
+/**
+ * Zeigt den aktuellen Betriebsmodus auf dem 
+ * OLED Display an.
+ * 
+ * Shows the current operating mode on the 
+ * OLED display.
+ * 
+ */
+void showMode() {
+  // Display leeren
+  // Clear old content from display
+  display.clearDisplay();
+  
+  // Textstartposition einstellen
+  // set text cursor position 
+  display.setCursor(1, 0);
+
+  // Betriebsmodus anzeigen
+  // show operation mode
+  switch (nMode) {
+    case MANUAL:
+      displaylines[3] = "mode: MANUAL";
+      break;
+    case AUTONOMOUS:
+      displaylines[3] = "mode: AUTO";
+      break;
+    case BATTLE:
+      displaylines[3] = "mode: BATTLE";
+      break;
+    case SERIALCMD:
+      displaylines[3] = "mode: SERIAL";
+      break;
+    default:
+      displaylines[3] = "mode: NONE";
+  }
+
+  // Text anzeigen / show welcome message
+  for (int i=0; i<4; i++) {
+    display.println(displaylines[i]);
+  }
+  display.display();
+
+}
+
+#endif
+
+// --- END FUNCTIONS OLED ---
 
 
 // --- BEGIN FUNCTIONS ULTRASONIC ---
@@ -1842,6 +1930,13 @@ void doSerialCommand() {
       // stop motors
       nSpeed = 0;
       bSetMotors = true;
+
+#ifdef HASOLED
+      // Betriebsmodus auf dem OLED Display anzeigen
+      // Show current mode of operation on the display
+      showMode();
+#endif
+      
     }
     else if (strSerialInput.substring(0,6) == "manual") {
       Serial.println("manual mode");
@@ -1851,6 +1946,13 @@ void doSerialCommand() {
       // stop motors
       nSpeed = 0;
       bSetMotors = true;
+
+#ifdef HASOLED
+      // Betriebsmodus auf dem OLED Display anzeigen
+      // Show current mode of operation on the display
+      showMode();
+#endif
+    
     }
     else if (strSerialInput.substring(0,6) == "battle") {
       Serial.println("battle mode");
@@ -1860,6 +1962,13 @@ void doSerialCommand() {
       // stop motors
       nSpeed = 0;
       bSetMotors = true;
+
+#ifdef HASOLED
+      // Betriebsmodus auf dem OLED Display anzeigen
+      // Show current mode of operation on the display
+      showMode();
+#endif
+    
     }
     else if (strSerialInput.substring(0,10) == "autonomous") {
       Serial.println("autonomous mode");
@@ -1869,6 +1978,13 @@ void doSerialCommand() {
       // stop motors
       nSpeed = 0;
       bSetMotors = true;
+
+#ifdef HASOLED
+      // Betriebsmodus auf dem OLED Display anzeigen
+      // Show current mode of operation on the display
+      showMode();
+#endif
+    
     }
     
     // Distanz zum nächsten Objekt mit dem Ultraschallsensor messen
@@ -1962,6 +2078,37 @@ void setup() {
     Serial.begin(SERIALSPEED);
 
 // --- END SETUP GENERAL ---
+
+
+// --- BEGIN SETUP OLED ---
+
+#ifdef HASOLED
+
+// mit I2C-Adresse 0x3c initialisieren
+// initialize with the I2C addr 0x3C 
+
+display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+
+display.clearDisplay();
+
+// set text color / Textfarbe setzen
+display.setTextColor(WHITE);
+
+// set text size / Textgroesse setzen
+display.setTextSize(1);
+
+// set text cursor position / Textstartposition einstellen
+display.setCursor(1,0);
+
+// Text anzeigen / show welcome message
+for (int i=0; i<4; i++) {
+  display.println(displaylines[i]);
+}
+display.display();
+
+#endif
+
+// --- END SETUP OLED ---
 
 
 // --- BEGIN SETUP SERIAL COMMAND ---
@@ -2168,6 +2315,11 @@ strSerialInput.reserve(200);
         nMode = SERIALCMD;
     }
 
+#ifdef HASOLED
+    // Betriebsmodus auf dem OLED Display anzeigen
+    // Show current mode of operation on the display
+    showMode();
+#endif
 
 // --- BEGIN SETUP MODE ---
 
@@ -2296,7 +2448,7 @@ void loop() {
 // --- BEGIN LOOP MOTOR ---
 
     // Handlung entsprechend dem Betriebsmodus ausführen
-	// act according to the mode of operation
+	  // act according to the mode of operation
 	
     // nMode = SERIALCMD;
 
