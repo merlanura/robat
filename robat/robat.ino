@@ -553,6 +553,35 @@ void showMode() {
 
 }
 
+
+/**
+ * Zeigt die Entfernung zum nächsten Objekt auf dem 
+ * OLED Display an.
+ * 
+ * Shows the distance to the nearest object on the 
+ * OLED display.
+ * 
+ */
+void showDistanceOLED(int nDistance) {
+  // Display leeren
+  // Clear old content from display
+  display.clearDisplay();
+  
+  // Textstartposition einstellen
+  // set text cursor position 
+  display.setCursor(1, 0);
+
+  String strDistance = String(nDistance);
+  displaylines[2] = String("dist: " + strDistance);
+
+  // Text anzeigen / show welcome message
+  for (int i=0; i<4; i++) {
+    display.println(displaylines[i]);
+  }
+  display.display();
+
+}
+
 #endif
 
 // --- END FUNCTIONS OLED ---
@@ -1244,6 +1273,12 @@ void doBattle() {
     // show the distance to the nearest object on the LEDs
     showDistance(nDistance);
 
+#ifdef HASOLED
+    // Entfernung zum nächsten Objekt auf dem OLED Display anzeigen
+    // show the distance to the nearest object on the OLED display
+    showDistanceOLED(nDistance);
+#endif
+
     // Zustand setzen
 
     // Entfernung zum Ziel < 20cm? Dann Attacke
@@ -1527,6 +1562,12 @@ void avoidObstacles() {
     }
 
     showDistance(nDistance);
+
+#ifdef HASOLED
+    // Entfernung zum nächsten Objekt auf dem OLED Display anzeigen
+    // show the distance to the nearest object on the OLED display
+    showDistanceOLED(nDistance);
+#endif
 
     int nSpeed = 0;
 
