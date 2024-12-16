@@ -452,6 +452,21 @@ int nMaxSpeed = 255;
 #define LEFT 0
 #define RIGHT 1
 
+// Zeiten, die der Roboter benötigt, um sich um bestimmte Winkel zu drehen
+// Times the robot needs to power its wheels to turn specific angles
+
+// Zeit in Millisekunden für eine 360-Grad-Drehung
+// Time in milliseconds for a 360-degree turn
+#define TIME_360_DEGREE_TURN 1000
+
+// Zeit in Millisekunden für eine 180-Grad-Drehung
+// Time in milliseconds for a 180-degree turn
+#define TIME_180_DEGREE_TURN 500
+
+// Zeit in Millisekunden für eine 90-Grad-Drehung
+// Time in milliseconds for a 90-degree turn
+#define TIME_90_DEGREE_TURN 250
+
 // --- END INIT MOTOR ---
 
 
@@ -1404,21 +1419,21 @@ void doBattle() {
 
             // drehe den Roboter nach links
             // turn robot left
-            turnRobot(LEFT, 250);
+            turnRobot(LEFT, TIME_90_DEGREE_TURN);
             
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(500);
 
             // drehe den Roboter nach rechts
             // turn robot right
-            turnRobot(RIGHT, 250);
+            turnRobot(RIGHT, TIME_90_DEGREE_TURN);
 
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(500);
 
             // drehe den Roboter nach rechts
             // turn robot right
-            turnRobot(RIGHT, 250);
+            turnRobot(RIGHT, TIME_90_DEGREE_TURN);
 
 			// volle Kraft voraus
 			// full speed ahead
@@ -1449,21 +1464,21 @@ void doBattle() {
 
             // drehe den Roboter nach rechts
             // turn robot right
-            turnRobot(RIGHT, 250);
+            turnRobot(RIGHT, TIME_90_DEGREE_TURN);
             
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(500);
 
             // drehe den Roboter nach links
             // turn robot left
-            turnRobot(LEFT, 250);
+            turnRobot(LEFT, TIME_90_DEGREE_TURN);
 
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
             delay(500);
 
             // drehe den Roboter nach links
             // turn robot left
-            turnRobot(LEFT, 250);
+            turnRobot(LEFT, TIME_90_DEGREE_TURN);
 
             nSpeed = nMaxSpeed;
             startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
@@ -1663,7 +1678,7 @@ void avoidObstacles() {
         if (nDistance > 15) {
             // nach links drehen
             // turn left
-            turnRobot(LEFT, 200);
+            turnRobot(LEFT, TIME_90_DEGREE_TURN);
         }
         else {
             // rechts frei?
@@ -1676,12 +1691,12 @@ void avoidObstacles() {
             if (nDistance > 15) {
                 // nach rechts drehen
                 // turn right
-                turnRobot(RIGHT, 200);
+                turnRobot(RIGHT, TIME_90_DEGREE_TURN);
             }
             else {
                 // umdrehen
                 // turn around
-                turnRobot(RIGHT, 1000);
+                turnRobot(RIGHT, TIME_360_DEGREE_TURN);
             }
         }
 

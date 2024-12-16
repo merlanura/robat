@@ -1,4 +1,4 @@
-# RoBat Robot Construction Kit #
+# RoBat Robot Construction Kit
 
 RoBat is a great robot kit with which you can build your own robot. It's easy and you can design your robot according to your ideas. The instructions explain how to use the kit.
 
@@ -10,7 +10,16 @@ Please find the RoBat manual in https://github.com/merlanura/robat/documentation
 
 Have fun!
 
-## Serial commands ##
+
+## Libraries
+
+To compile the project, you will need the following external libraries:
+
+- TimerFreeTone by Tim Eckel, version 1.5, https://bitbucket.org/teckel12/arduino-timer-free-tone/downloads/
+- Ultrasonic by Eric Simões, version 3.0.0, https://github.com/ErickSimoes/Ultrasonic
+
+
+## Serial commands
 
 RoBat can be controlled from te outside via serial commands. Te UART pins TX and RX are used at a speed of 115200 b/s.
 
