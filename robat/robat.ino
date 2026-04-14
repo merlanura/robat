@@ -229,8 +229,11 @@ int duration[] = { VIERTEL, ACHTEL,  ACHTEL,  VIERTEL, VIERTEL, VIERTEL,    VIER
 // servos on A0 (D14) and A1 (D15)
 
 // RoBat verfügt über zwei Servos. Servo 2 wird zum Drehen des
-// Ultraschallsensors verwendet. Servo 1 ist frei verwendbar und wird
-// in diesem Sketch langsam hin- und her bewegt.
+// Ultraschallsensors verwendet. Servo 1 ist frei verwendbar.
+// Er kann in diesem Sketch mit der Funktion moveServoBackForth() 
+// regelmäßig hin- und her bewegt werden.
+// Mit der Funktion toggleServo1() wird Servo 1 zwischen seiner minimalen
+// und maximalen Position umgeschaltet.
 
 // Für jeden Servo wird die minimale und maximale Position angegeben.
 // Die minimale Position sollte theoretisch 0, die maximale 180 Grad sein.
@@ -239,7 +242,10 @@ int duration[] = { VIERTEL, ACHTEL,  ACHTEL,  VIERTEL, VIERTEL, VIERTEL,    VIER
 
 // RoBat supports two servos, although only one is normally used.
 // Servo 2 is used to turn the ultrasonic distance sensor. Servo 1 can
-// be used for other purposes. RoBat turns it back and forth.
+// be used for other purposes. RoBat turns it back and forth using the
+// function moveServoBackForth().
+// Servo 1 can be moved between its minimum and maximum positions using 
+// the function toggleServo1().
 
 // In theory, each servo can be set at any position from 0 to 180 degrees.
 // In practice, the extreme positions sometimes cannot be reached. 
@@ -489,6 +495,10 @@ int nJoyPosH = 512;
 // neutral position.
 #define JOY_MIDDLE_MIN 472
 #define JOY_MIDDLE_MAX 552
+
+// Aktueller Zustand des Joystick-Buttons
+// Current state of the joystick switch button
+bool bCurrentButtonState = digitalRead(JOYSTICK_SWITCH_PIN);
 
 // --- END INIT JOYSTICK ---
 
@@ -824,6 +834,41 @@ void stopServo2() {
    }
 }
 
+
+/**
+ * Bewegt Servo 1 zwischen seinen Extrempositionen.
+ *
+ * Moves servo 1 between its extreme positions.
+ *
+ */
+void toggleServo1() {
+    unsigned long timeNow = millis();
+
+    if ((SERVO_1_MIN == actualPositionServo1) || (90 == actualPositionServo1)) {
+        targetPositionServo1 = SERVO_1_MAX;
+        startServo1(targetPositionServo1);
+        timeOfLastChangeServo1 = timeNow;
+    }
+    else if (SERVO_1_MAX == actualPositionServo1) {
+        targetPositionServo1 = SERVO_1_MIN;
+        startServo1(targetPositionServo1);
+        timeOfLastChangeServo1 = timeNow;
+    }
+
+    // Servo anhalten, wenn die Position erreicht ist bzw. die Zeit für die
+    // Erreichung der Position abgelaufen ist.
+    // Stop servo if the target position or timeout is reached.
+    if (bAttachedServo1 && (timeNow - timeOfLastChangeServo1) > DETACH_DELAY_SERVO_1) {
+        if (DEBUG) {
+            Serial.print("servo time:");
+            Serial.println(timeNow - timeOfLastChangeServo1);
+        }
+
+        stopServo1();
+
+        actualPositionServo1 = targetPositionServo1;
+    }
+}
 
 /**
  * Bewegt Servo 1 hin und her. Dabei werden nacheinander mehrere
@@ -1923,6 +1968,24 @@ void manualControl() {
 
 }
 
+
+/**
+ * Erkennt, ob der Joystick-Button seinen Zustand wechselt. 
+ * Liefert true zurück, falls der Zustand gewechselt hat, false sonst.
+ *
+ * Detects state changes of the joystick switch.
+ * Returns true if the state has changed, and false otherwise.
+ *
+ */
+bool detectButtonActivity() {
+    if (bCurrentButtonState != digitalRead(JOYSTICK_SWITCH_PIN)) {
+        bCurrentButtonState = not(bCurrentButtonState);
+        return true;
+    }
+
+    return false;
+}
+
 // --- END FUNCTIONS MANUAL_CONTROL ---
 
 
@@ -2536,7 +2599,15 @@ void loop() {
 
     // Servo 1 hin und her bewegen
     // move servo 1 back and forth
-    moveServoBackForth();
+    // Entferne den Kommentar, um Servo 1 hin und her zu bewegen:
+    // remove the comment to make servo 1 swivel:
+    // moveServoBackForth();
+
+    // Servo 1 bei Zustandswechsel des Joystickbuttons bewegen
+    // Move servo 1 if the joystick button is pressed
+    if (detectButtonActivity()) {
+        toggleServo1();
+    }
 
 // --- END LOOP SERVO ---
 
