@@ -260,13 +260,27 @@ int duration[] = { VIERTEL, ACHTEL,  ACHTEL,  VIERTEL, VIERTEL, VIERTEL,    VIER
 #define SERVO_2_MIN 10   // minimale Position 0-180
 #define SERVO_2_MAX 170  // maximale Position 0-180
 
+// Greifer-Winkel für Servo 1. Konservative Defaults bis zur EEPROM-Kalibrierung.
+// Der MG996R kann mechanisch weiter fahren als der Greifer — zu weite Winkel
+// führen zu Getriebe-Knirschen. Nach der Kalibrierung werden diese Werte durch
+// EEPROM-Werte ersetzt.
+
+// Gripper angles for servo 1. Conservative defaults until EEPROM calibration.
+// The MG996R can rotate further than the gripper allows — angles beyond the
+// mechanical limits cause gear grinding. These are replaced by EEPROM values
+// after calibration.
+#define GRIPPER_OPEN_ANGLE  45   // Greifer offen  / gripper open
+#define GRIPPER_CLOSE_ANGLE 90   // Greifer zu     / gripper closed
+
 // Der Servo benötigt eine gewisse Zeit für die Drehung. DETACH_DELAY gibt
 // diese Zeit in ms an.
 
 // Turning the servo takes some time. DETACH_DELAY_SERVO_N defines the
 // time (ms) before the servo is turned off again.
+// 500ms ist sicherer Puffer für den MG996R (ca. 0.17s/60° bei 6V).
+// 500ms is a safe margin for the MG996R (approx. 0.17s/60° at 6V).
 
-#define DETACH_DELAY_SERVO_1 300
+#define DETACH_DELAY_SERVO_1 500
 #define DETACH_DELAY_SERVO_2 150
 
 // Servo Objekte erstellen
@@ -920,7 +934,56 @@ void moveServoBackForth() {
     }
 }
 
-// --- BEGIN FUNCTIONS SERVO ---
+// --- END FUNCTIONS SERVO ---
+
+
+// --- BEGIN FUNCTIONS GRIPPER ---
+
+/**
+ * Erkennt einen Button-Druck (Übergang zu LOW bei INPUT_PULLUP).
+ * Gibt true zurück, wenn der Button gerade gedrückt wurde — nicht beim Loslassen.
+ *
+ * Detects a button press (transition to LOW with INPUT_PULLUP).
+ * Returns true on press, not on release.
+ */
+bool detectButtonPress() {
+    if (bCurrentButtonState != digitalRead(JOYSTICK_SWITCH_PIN)) {
+        bCurrentButtonState = not(bCurrentButtonState);
+        return !bCurrentButtonState;  // LOW (false) = gedrückt / pressed
+    }
+    return false;
+}
+
+/**
+ * Hält Servo 1 (Greifer) zeitgesteuert an.
+ * Muss in jedem loop()-Durchlauf aufgerufen werden.
+ *
+ * Timed detach for servo 1 (gripper). Must be called every loop() iteration.
+ */
+void updateGripper() {
+    if (bAttachedServo1 && (millis() - timeOfLastChangeServo1) > DETACH_DELAY_SERVO_1) {
+        stopServo1();
+    }
+}
+
+/**
+ * Schaltet den Greifer zwischen offen und geschlossen um.
+ * Ignoriert den Aufruf, wenn der Servo noch in Bewegung ist.
+ *
+ * Toggles the gripper between open and closed positions.
+ * Does nothing if the servo is still moving.
+ */
+void toggleGripper() {
+    if (bAttachedServo1) return;
+    if (actualPositionServo1 == GRIPPER_CLOSE_ANGLE) {
+        startServo1(GRIPPER_OPEN_ANGLE);
+    } else {
+        startServo1(GRIPPER_CLOSE_ANGLE);
+    }
+    timeOfLastChangeServo1 = millis();
+}
+
+// --- END FUNCTIONS GRIPPER ---
 
 
 // --- BEGIN FUNCTIONS MOTOR ---
@@ -2603,10 +2666,14 @@ void loop() {
     // remove the comment to make servo 1 swivel:
     // moveServoBackForth();
 
-    // Servo 1 bei Zustandswechsel des Joystickbuttons bewegen
-    // Move servo 1 if the joystick button is pressed
-    if (detectButtonActivity()) {
-        toggleServo1();
+    // Greifer-Servo zeitgesteuert anhalten (läuft jeden Loop-Durchlauf)
+    // Timed gripper detach — runs every loop iteration
+    updateGripper();
+
+    // Greifer bei Button-Druck umschalten (nur Druck, nicht Loslassen)
+    // Toggle gripper on button press (press only, not release)
+    if (detectButtonPress()) {
+        toggleGripper();
     }
 
 // --- END LOOP SERVO ---
