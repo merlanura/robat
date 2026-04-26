@@ -823,6 +823,30 @@ void startServo1(int targetPos) {
 
 
 /**
+ * Wie startServo1(), aber ohne Winkel-Remapping (0..180 → SERVO_1_MIN..SERVO_1_MAX).
+ * Für kalibrierte Greifer-Winkel, die bereits physikalische Gradzahlen sind.
+ *
+ * Like startServo1() but without angle remapping. Use for calibrated physical angles
+ * that must not be mapped a second time — otherwise the servo overshoots its limit.
+ */
+void startServo1Raw(int physicalAngle) {
+    targetPositionServo1 = physicalAngle;
+    servo1.attach(SERVO_1_PIN);
+    bAttachedServo1      = true;
+
+    if (DEBUG) {
+        Serial.print("actualPositionServo1: ");
+        Serial.println(actualPositionServo1);
+        Serial.print("targetPositionServo1 (raw): ");
+        Serial.println(targetPositionServo1);
+    }
+
+    servo1.write(physicalAngle);
+    actualPositionServo1 = -1;
+}
+
+
+/**
  * Stellt die Zielposition für Servo 2 ein und schaltet den Servomotor ein.
  * 
  * Sets the target position for servo 2 and starts the servo.
@@ -1018,9 +1042,9 @@ void updateGripper() {
 void toggleGripper() {
     if (bAttachedServo1) return;
     if (actualPositionServo1 == nGripperCloseAngle) {
-        startServo1(nGripperOpenAngle);
+        startServo1Raw(nGripperOpenAngle);
     } else {
-        startServo1(nGripperCloseAngle);
+        startServo1Raw(nGripperCloseAngle);
     }
     timeOfLastChangeServo1 = millis();
 }
