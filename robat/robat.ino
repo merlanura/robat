@@ -327,6 +327,48 @@ int targetPositionServo2 = 0;
 // --- END INIT SERVO ---
 
 
+// --- BEGIN INIT EEPROM ---
+
+// EEPROM-Layout für die Greifer-Kalibrierung (3 Bytes)
+// EEPROM layout for gripper calibration (3 bytes)
+#include <EEPROM.h>
+
+#define EEPROM_MAGIC_ADDR  0    // Magic-Byte: zeigt an, ob Kalibrierung vorhanden
+#define EEPROM_OPEN_ADDR   1    // Gespeicherter Öffnungswinkel
+#define EEPROM_CLOSE_ADDR  2    // Gespeicherter Schließwinkel
+#define EEPROM_MAGIC_BYTE  0xCA // Magic value: calibration available
+
+// --- END INIT EEPROM ---
+
+
+// --- BEGIN INIT CALIBRATION ---
+
+// Greifer-Winkel zur Laufzeit — werden aus EEPROM geladen oder mit
+// GRIPPER_OPEN_ANGLE / GRIPPER_CLOSE_ANGLE initialisiert.
+// Gripper angles at runtime — loaded from EEPROM or initialised from defaults.
+int nGripperOpenAngle  = GRIPPER_OPEN_ANGLE;
+int nGripperCloseAngle = GRIPPER_CLOSE_ANGLE;
+
+// Button mindestens diese Zeit halten, um Kalibrierung auszulösen.
+// Hold button at least this long to trigger calibration mode.
+#define CALIBRATION_HOLD_MS 5000
+
+unsigned long buttonHeldSince      = 0;     // Zeitstempel beim Drücken des Buttons
+bool bCalibrationMode              = false; // true = Kalibrierungsmodus aktiv
+int  nCalibrationStep              = 0;     // 0 = Öffnungswinkel, 1 = Schließwinkel
+bool bCalibButtonWasPressed        = false; // Flanken-Erkennung innerhalb Kalibrierung
+
+// Inkrementelle Joystick-Steuerung während der Kalibrierung.
+// Incremental joystick control during calibration.
+#define CALIB_MOVE_INTERVAL  30   // ms zwischen Winkelschritten / ms between angle steps
+#define CALIB_STEP_DEG        1   // Grad pro Schritt / degrees per step
+
+int           nCalibServoAngle  = 90; // aktueller Servo-Winkel in Kalibrierung / current servo angle
+unsigned long lastCalibMoveTime = 0;  // letzter Zeitstempel für Winkelschritt / last step timestamp
+
+// --- END INIT CALIBRATION ---
+
+
 // --- BEGIN INIT ULTRASONIC ---
 
 // Zur Entfernungsmessung wird ein Ultraschallsensor HC-SR04 eingesetzt.
@@ -975,15 +1017,175 @@ void updateGripper() {
  */
 void toggleGripper() {
     if (bAttachedServo1) return;
-    if (actualPositionServo1 == GRIPPER_CLOSE_ANGLE) {
-        startServo1(GRIPPER_OPEN_ANGLE);
+    if (actualPositionServo1 == nGripperCloseAngle) {
+        startServo1(nGripperOpenAngle);
     } else {
-        startServo1(GRIPPER_CLOSE_ANGLE);
+        startServo1(nGripperCloseAngle);
     }
     timeOfLastChangeServo1 = millis();
 }
 
 // --- END FUNCTIONS GRIPPER ---
+
+
+// --- BEGIN FUNCTIONS CALIBRATION ---
+
+/**
+ * Lädt die Greifer-Kalibrierung aus dem EEPROM.
+ * Prüft Magic-Byte und Winkelplausibilität; bei ungültigen Werten bleiben
+ * die Defaults (GRIPPER_OPEN_ANGLE / GRIPPER_CLOSE_ANGLE) erhalten.
+ *
+ * Loads gripper calibration from EEPROM.
+ * Validates magic byte and angle range; keeps defaults on invalid data.
+ */
+void loadGripperCalibration() {
+    if (EEPROM.read(EEPROM_MAGIC_ADDR) != EEPROM_MAGIC_BYTE) return;
+    int openAng  = EEPROM.read(EEPROM_OPEN_ADDR);
+    int closeAng = EEPROM.read(EEPROM_CLOSE_ADDR);
+    if (openAng  > 180) return;
+    if (closeAng > 180) return;
+    if (openAng  == closeAng)           return;
+    nGripperOpenAngle  = openAng;
+    nGripperCloseAngle = closeAng;
+}
+
+/**
+ * Startet den Kalibrierungsmodus: Motoren stoppen, Servo einklinken,
+ * LED- und Ton-Feedback geben, dann auf Button-Release warten.
+ *
+ * Enters calibration mode: stops motors, attaches servo, gives audio/visual
+ * feedback, then waits for button release before returning.
+ */
+void enterCalibrationMode() {
+    bCalibrationMode       = true;
+    nCalibrationStep       = 0;
+    bCalibButtonWasPressed = false;
+
+    stopMotor(MOTOR_A);
+    stopMotor(MOTOR_B);
+
+    servo1.attach(SERVO_1_PIN);
+    bAttachedServo1 = true;
+
+    nCalibServoAngle  = 90;
+    lastCalibMoveTime = 0;
+    servo1.write(nCalibServoAngle);
+
+    leds[0] = CRGB::Yellow;
+    leds[1] = CRGB::Yellow;
+    FastLED.show();
+
+    TimerFreeTone(TONE_PIN, NOTE_C4, ACHTEL);
+    delay(60);
+    TimerFreeTone(TONE_PIN, NOTE_E4, ACHTEL);
+    delay(60);
+    TimerFreeTone(TONE_PIN, NOTE_G4, VIERTEL);
+
+    // Warten bis Button losgelassen — er war für den Trigger 5s gedrückt.
+    // Wait for button release — it was held down for the 5s trigger.
+    while (digitalRead(JOYSTICK_SWITCH_PIN) == LOW) {
+        delay(10);
+    }
+}
+
+/**
+ * Führt einen Kalibrierungsschritt aus. Wird in jedem loop()-Durchlauf
+ * aufgerufen, solange bCalibrationMode == true.
+ *
+ * Executes one calibration step per loop() iteration while bCalibrationMode is true.
+ *
+ * Schritt 0 (LED gelb): Joystick → Öffnungswinkel; Button bestätigt.
+ * Schritt 1 (LED grün): Joystick → Schließwinkel; Button bestätigt + speichert.
+ *
+ * Step 0 (LED yellow): joystick sets open angle; button confirms.
+ * Step 1 (LED green):  joystick sets close angle; button confirms + saves.
+ */
+void doCalibration() {
+    // Inkrementelle Joystick-Steuerung: Totzone ignorieren, außerhalb ±1°/30ms bewegen.
+    // Incremental control: ignore dead zone, move ±1° every 30ms outside it.
+    unsigned long now = millis();
+    if (now - lastCalibMoveTime >= CALIB_MOVE_INTERVAL) {
+        lastCalibMoveTime = now;
+        int joyY = analogRead(JOY_VERTICAL_PIN);
+        if (joyY < JOY_MIDDLE_MIN) {
+            nCalibServoAngle += CALIB_STEP_DEG;
+        } else if (joyY > JOY_MIDDLE_MAX) {
+            nCalibServoAngle -= CALIB_STEP_DEG;
+        }
+        nCalibServoAngle = constrain(nCalibServoAngle, SERVO_1_MIN, SERVO_1_MAX);
+        servo1.write(nCalibServoAngle);
+    }
+
+    bool bButtonNow = (digitalRead(JOYSTICK_SWITCH_PIN) == LOW);
+
+    if (bButtonNow && !bCalibButtonWasPressed) {
+        bCalibButtonWasPressed = true;
+
+        if (nCalibrationStep == 0) {
+            nGripperOpenAngle = nCalibServoAngle;
+            TimerFreeTone(TONE_PIN, NOTE_C5, VIERTEL);
+            nCalibrationStep  = 1;
+            leds[0] = CRGB::Green;
+            leds[1] = CRGB::Black;
+            FastLED.show();
+        } else {
+            nGripperCloseAngle = nCalibServoAngle;
+            TimerFreeTone(TONE_PIN, NOTE_C5, ACHTEL);
+            delay(60);
+            TimerFreeTone(TONE_PIN, NOTE_E5, ACHTEL);
+            delay(60);
+            TimerFreeTone(TONE_PIN, NOTE_G5, VIERTEL);
+
+            EEPROM.write(EEPROM_MAGIC_ADDR, (byte)EEPROM_MAGIC_BYTE);
+            EEPROM.write(EEPROM_OPEN_ADDR,  (byte)nGripperOpenAngle);
+            EEPROM.write(EEPROM_CLOSE_ADDR, (byte)nGripperCloseAngle);
+
+            servo1.detach();
+            bAttachedServo1      = false;
+            actualPositionServo1 = nGripperCloseAngle;
+            bCalibrationMode     = false;
+            nCalibrationStep     = 0;
+            bCalibButtonWasPressed = false;
+            buttonHeldSince      = 0;
+
+            leds[0] = CRGB::Black;
+            leds[1] = CRGB::Black;
+            FastLED.show();
+        }
+    } else if (!bButtonNow) {
+        bCalibButtonWasPressed = false;
+    }
+}
+
+/**
+ * Unterscheidet kurzen Druck (< 5s, Greifer umschalten) von Langdruck
+ * (≥ 5s, Kalibrierung starten).
+ *
+ * Distinguishes short press (< 5s, toggle gripper) from long press
+ * (≥ 5s, enter calibration mode).
+ */
+void handleJoystickButton() {
+    bool bButtonNow   = (digitalRead(JOYSTICK_SWITCH_PIN) == LOW);
+    unsigned long now = millis();
+
+    if (bButtonNow && buttonHeldSince == 0) {
+        buttonHeldSince = now;
+    }
+    else if (!bButtonNow && buttonHeldSince > 0) {
+        if (now - buttonHeldSince < CALIBRATION_HOLD_MS) {
+            toggleGripper();
+        }
+        buttonHeldSince = 0;
+    }
+    else if (bButtonNow && buttonHeldSince > 0) {
+        if (now - buttonHeldSince >= CALIBRATION_HOLD_MS) {
+            enterCalibrationMode();
+            buttonHeldSince = 0;
+        }
+    }
+}
+
+// --- END FUNCTIONS CALIBRATION ---
 
 
 // --- BEGIN FUNCTIONS MOTOR ---
@@ -2353,6 +2555,15 @@ strSerialInput.reserve(200);
 // --- END SETUP SERVO ---
 
 
+// --- BEGIN SETUP EEPROM ---
+
+    // Gespeicherte Greifer-Kalibrierung laden (überschreibt Defaults wenn gültig)
+    // Load stored gripper calibration (overrides defaults if valid)
+    loadGripperCalibration();
+
+// --- END SETUP EEPROM ---
+
+
 // --- BEGIN SETUP BUZZER ---
 
     // Startmelodie abspielen
@@ -2666,14 +2877,13 @@ void loop() {
     // remove the comment to make servo 1 swivel:
     // moveServoBackForth();
 
-    // Greifer-Servo zeitgesteuert anhalten (läuft jeden Loop-Durchlauf)
-    // Timed gripper detach — runs every loop iteration
-    updateGripper();
-
-    // Greifer bei Button-Druck umschalten (nur Druck, nicht Loslassen)
-    // Toggle gripper on button press (press only, not release)
-    if (detectButtonPress()) {
-        toggleGripper();
+    // Kalibrierungsmodus hat Vorrang. Außerhalb: normales Button-Handling + Servo-Stop.
+    // Calibration mode takes priority. Otherwise: button handling + timed servo stop.
+    if (bCalibrationMode) {
+        doCalibration();
+    } else {
+        updateGripper();
+        handleJoystickButton();
     }
 
 // --- END LOOP SERVO ---
