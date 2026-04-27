@@ -2544,32 +2544,28 @@ strSerialInput.reserve(200);
     pinMode(SERVO_1_PIN, OUTPUT);
     pinMode(SERVO_2_PIN, OUTPUT);
 
-    // Servos beim Start hin und her bewegen (Funktionstest)
-	// move servo back and forth at startup (check)
+    // Servo 2 beim Start hin und her bewegen (Funktionstest)
+    // Servo 1 wird nicht bewegt (Greifer)
+	  // Move servo 2 back and forth at startup (check)
+    // Servo 1 is not moved (gripper)
     startServo2(90);
-    startServo1(90);
     delay(500);
     stopServo2();
-    startServo2(45);
-    stopServo1();
-    startServo1(45);
-    delay(500);
-    stopServo2();
-    startServo2(135);
-    stopServo1();
-    startServo1(135);
-    delay(500);
-    stopServo2();
-    stopServo1();
 
-    // in Mittelstellung ausrichten
-    // move servo to middle position (90 degrees)
-    delay(500);
-    startServo2(90);
-    startServo1(90);
+    startServo2(45);
     delay(500);
     stopServo2();
-    stopServo1();
+
+    startServo2(135);
+    delay(500);
+    stopServo2();
+
+    // Servo 2 in Mittelstellung ausrichten (90 Grad)
+    // Move servo 2 to middle position (90 degrees)
+    delay(500);
+    startServo2(90);
+    delay(500);
+    stopServo2();
 
     targetPositionServo2 = 90;
     actualPositionServo2 = 90;
