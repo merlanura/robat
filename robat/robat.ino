@@ -1088,6 +1088,10 @@ void enterCalibrationMode() {
     stopMotor(MOTOR_A);
     stopMotor(MOTOR_B);
 
+    // Setze seriellen Modus während der Kalibrierung
+    // Set serial mode during calibration
+    nMode = SERIALCMD;
+    
     servo1.attach(SERVO_1_PIN);
     bAttachedServo1 = true;
 
@@ -1172,6 +1176,10 @@ void doCalibration() {
             bCalibButtonWasPressed = false;
             buttonHeldSince      = 0;
 
+            // Setze manuellen Modus nach der Kalibrierung
+            // Set serial mode after calibration
+            nMode = MANUAL;
+    
             leds[0] = CRGB::Black;
             leds[1] = CRGB::Black;
             FastLED.show();
@@ -2661,49 +2669,54 @@ strSerialInput.reserve(200);
     // Der MANUAL Modus kann mit dem Kommando "sercmd" über die serielle Schnittstelle
     // in den Modus SERIALCMD überführt werden.
 
-    // Joystick-Knopf gedrückt: MANUAL
+    // Joystick-Knopf gedrückt: SERIALCMD (Steuerung über serielle Schnittstelle)
     // Abstand > 0 und < 10cm: MANUAL
     // Abstand >= 10cm und < 50cm: Battle-Modus
     // Abstand >= 50cm und < 100cm: Hindernisvermeidung
-    // sonst: Steuerung über serielle Schnittstelle
+    // sonst: MANUAL
     
-    // falls der Joystick Button beim Einschalten gedrückt wird, ist der
-    // Modus ebenfalls MANUAL
+    // Falls der Joystick Button beim Einschalten gedrückt wird, ist der
+    // Modus ebenfalls SERIALCMD. Das kann auch durch Verbinden von JOYSTICK_SWITCH_PIN
+    // mit GND (LOW) erreicht werden, falls der Joystick nicht angeschlossen ist.
 
     // Wenn beide Fühler vorhanden und gedrückt sind, wird der Modus BATTLE verwendet.
 
-	// Determine the mode of operation
-	//
-	// There are four modes of operation:
-	// 
-	// - manual control (MANUAL)
-	// - obstacle avoidance (AUTONOMOUS)
-	// - Hebocon / battle (BATTLE)
-	// - external control via the serial interface (SERIAL)
-	// 
-	// When the robot is turned on, the operation mode will be determined
-	// by the distance to the closest object, the joystick button and
-	// the bumper switches.
-	
-	// Connecting the joystick is optional. The ultrasonic sensor may be 
-	// missing. In this case, the distance returned by getDistance() 
-	// will be 0 (zero).
-	// Without the ultrasonic sensor, autonomous driving only makes sense
-	// if the bumper switches are connected. Otherwise, the robot would be 
-	// completely blind.
-	
-	// SERIALCMD mode can be selected by sending "sercmd" over the serial 
-	// interface to the robot.
-
-	// Determining the mode of operation
-	// joystick button held down at power-on: MANUAL
-	// distance > 0 and < 10cm: MANUAL
-	// distance >= 10cm und < 50cm: BATTLE
+  	// Determine the mode of operation
+  	//
+  	// There are four modes of operation:
+  	// 
+  	// - manual control (MANUAL)
+  	// - obstacle avoidance (AUTONOMOUS)
+  	// - Hebocon / battle (BATTLE)
+  	// - external control via the serial interface (SERIAL)
+  	// 
+  	// When the robot is turned on, the operation mode will be determined
+  	// by the distance to the closest object, the joystick button and
+  	// the bumper switches.
+  	
+  	// Connecting the joystick is optional. The ultrasonic sensor may be 
+  	// missing. In this case, the distance returned by getDistance() 
+  	// will be 0 (zero).
+  	// Without the ultrasonic sensor, autonomous driving only makes sense
+  	// if the bumper switches are connected. Otherwise, the robot would be 
+  	// completely blind.
+  	
+  	// SERIALCMD mode can be selected by sending "sercmd" over the serial 
+  	// interface to the robot.
+  
+  	// Determining the mode of operation
+  	// joystick button held down at power-on: MANUAL
+  	// distance > 0 and < 10cm: MANUAL
+  	// distance >= 10cm und < 50cm: BATTLE
     // distance >= 50cm und < 100cm: obstacle avoidance
     // otherwise: SERIALCMD
 
-	// If both bumper switches are pressed, the robot also goes into
-	// BATTLE mode.
+    // If the joystick button is pressed during startup, the mode is also SERIALCMD.
+    // This can also be achieved by connecting JOYSTICK_SWITCH_PIN to GND (LOW) if
+    // the joystick is not connected.
+    
+  	// If both bumper switches are pressed, the robot also goes into
+  	// BATTLE mode.
 	
     int nDistance = getDistance();
     int bButtonPressed = digitalRead(JOYSTICK_SWITCH_PIN);
@@ -2711,7 +2724,7 @@ strSerialInput.reserve(200);
     int bBumper2 = digitalRead(BUMPER2_PIN);
 
     if (LOW == bButtonPressed) {
-        nMode = MANUAL;
+        nMode = SERIALCMD;
     }
     else if ((nDistance > 0) && (nDistance < 10)) {
         nMode = MANUAL;
@@ -2725,7 +2738,7 @@ strSerialInput.reserve(200);
     else if ((nDistance >= 50) && (nDistance < 100)) {
         nMode = AUTONOMOUS;
     } else {
-        nMode = SERIALCMD;
+        nMode = MANUAL;
     }
 
 #ifdef HASOLED
