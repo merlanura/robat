@@ -492,6 +492,15 @@ int nPrevMotorSpeed2 = 0;
 // nMaxSpeed 0..255
 int nMaxSpeed = 255;
 
+// Maximaler Lenkeinfluss: begrenzt, wie stark die horizontale Joystick-Auslenkung
+// die Differenz zwischen den beiden Motorgeschwindigkeiten verändern darf.
+// Ein kleinerer Wert macht die Lenkung sanfter und leichter beherrschbar.
+// Maximum steering effect: limits how much the horizontal joystick deflection
+// may change the speed difference between the two motors.
+// A smaller value makes steering smoother and easier to control.
+// nMaxSteering 0..255
+int nMaxSteering = 80;
+
 // Für die Motoren und ihre Laufrichtung werden Namen definiert, um die
 // Ansteuerung zu erleichtern.
 
@@ -2181,12 +2190,12 @@ void manualControl() {
         nJoyPosH = nJoyPosH * -1;  
 
         // Die Werte vom Joystick liegen zwischen 0 und 1023. Sie werden
-        // auf den Bereich der Motorgeschwindigkeit von 0 bis nMaxSpeed
+        // auf den Bereich des maximalen Lenkeinfluss von 0 bis nMaxSteering
         // abgebildet.
 
     		// The joystick position values are between 0 and 1023. They are mapped
-    		// on the range 0 to nMaxSpeed.
-        nJoyPosH = map(nJoyPosH, 0, JOY_MIDDLE_MIN, 0, nMaxSpeed);
+    		// on the range 0 to nMaxSteering.
+        nJoyPosH = map(nJoyPosH, 0, JOY_MIDDLE_MIN, 0, nMaxSteering);
 
         // Motorgeschwindigkeiten setzen
         // set motor speed
@@ -2207,13 +2216,13 @@ void manualControl() {
         // right
 
         // Die Werte vom Joystick liegen zwischen 0 und 1023. Sie werden
-        // auf den Bereich der Motorgeschwindigkeit von 0 bis nMaxSpeed
+        // auf den Bereich des maximalen Lenkeinfluss von 0 bis nMaxSteering
         // abgebildet.
 
     		// The joystick position values are between 0 and 1023. They are mapped
-    		// on the range 0 to nMaxSpeed.
+    		// on the range 0 to nMaxSteering.
 
-        nJoyPosH = map(nJoyPosH, JOY_MIDDLE_MAX, 1023, 0, nMaxSpeed);
+        nJoyPosH = map(nJoyPosH, JOY_MIDDLE_MAX, 1023, 0, nMaxSteering);
 
         // Motorgeschwindigkeiten setzen
         // set motor speed
