@@ -2080,8 +2080,11 @@ void manualControl() {
     // weichen die Werte davon ab. Wir definieren deshalb alle Werte
     // zwischen JOY_MIDDLE_MIN und JOY_MIDDLE_MAX als Mittelstellung.
     
-    // The joystick returns values between 0 and 1023 in horizontal (X)
-    // and vertical (Y) 
+    // The joystick provides values between 0 and 1023 in the X and Y directions.
+    // When the joystick is in the center position, it should theoretically
+    // return a value of 512 for both directions. In practice,
+    // the values deviate from this. Therefore, we define all values
+    // between JOY_MIDDLE_MIN and JOY_MIDDLE_MAX as the center position.
 
     int nMotorDir = STOP; // default
 
@@ -2121,8 +2124,8 @@ void manualControl() {
         // für die Rückwärtsfahrt werden die Werte umgekehrt
         // the values are inverted if the robots drives backward
 
-		// negative Zahlen
-		// negative numbers
+    		// negative Zahlen
+    		// negative numbers
         nJoyPosV = nJoyPosV - JOY_MIDDLE_MIN; 
         
         // positiv machen
@@ -2151,10 +2154,10 @@ void manualControl() {
     }
 
     // Steuerung links und rechts
-	// left and right control
+	  // left and right control
 	
-    // Die horizontale Joystickposition beeinflusst die Motorgeschwindigkeit
-    // the horizontal position of the joystick also influences the motor speed
+    // Die horizontale Joystickposition beeinflusst die Motorgeschwindigkeit ebenfalls.
+    // The horizontal position of the joystick also influences the motor speed.
 
     if ((0 == nJoyPosV) && (0 == nJoyPosH)) {
         // kein Joystick angeschlossen
@@ -2164,13 +2167,13 @@ void manualControl() {
     }
     else if (nJoyPosH < JOY_MIDDLE_MIN) {
         // links
-		// left
+		    // left
 		
         // Bei der Bewegung nach links werden die Werte umgekehrt
         // the values are inverted if the robot turns left
 
-		// negative Zahlen
-		// negative numbers
+    		// negative Zahlen
+    		// negative numbers
         nJoyPosH = nJoyPosH - JOY_MIDDLE_MIN; 
         
         // invert the numbers
@@ -2181,8 +2184,8 @@ void manualControl() {
         // auf den Bereich der Motorgeschwindigkeit von 0 bis nMaxSpeed
         // abgebildet.
 
-		// The joystick position values are between 0 and 1023. They are mapped
-		// on the range 0 to nMaxSpeed.
+    		// The joystick position values are between 0 and 1023. They are mapped
+    		// on the range 0 to nMaxSpeed.
         nJoyPosH = map(nJoyPosH, 0, JOY_MIDDLE_MIN, 0, nMaxSpeed);
 
         // Motorgeschwindigkeiten setzen
@@ -2207,8 +2210,8 @@ void manualControl() {
         // auf den Bereich der Motorgeschwindigkeit von 0 bis nMaxSpeed
         // abgebildet.
 
-		// The joystick position values are between 0 and 1023. They are mapped
-		// on the range 0 to nMaxSpeed.
+    		// The joystick position values are between 0 and 1023. They are mapped
+    		// on the range 0 to nMaxSpeed.
 
         nJoyPosH = map(nJoyPosH, JOY_MIDDLE_MAX, 1023, 0, nMaxSpeed);
 
@@ -2231,9 +2234,9 @@ void manualControl() {
     // nicht an, manchmal entsteht ein summendes Geräusch. Das wird hier
     // unterdrückt.
 
-	// At very low motor speeds, the motors won't start at all. Sometimes
-	// a humming or buzzing noise can be heard. We suppress this by setting
-	// the motor speed to 0 (zero) if it is below a threshold.
+  	// At very low motor speeds, the motors won't start at all. Sometimes
+  	// a humming or buzzing noise can be heard. We suppress this by setting
+  	// the motor speed to 0 (zero) if it is below a threshold.
 	
     if (nMotorSpeed1 < 8) {
         nMotorSpeed1 = 0;
@@ -2243,7 +2246,7 @@ void manualControl() {
     }
 
     // Motorgeschwindigkeit mit den LEDs anzeigen
-	// show the motor speed on the LEDs
+	  // show the motor speed on the LEDs
     if ((nMotorSpeed1 == 0) || (nMotorSpeed2 == 0)) {
         leds[0] = CRGB::White;
         leds[1] = CRGB::White;
