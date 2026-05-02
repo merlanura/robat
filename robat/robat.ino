@@ -261,12 +261,12 @@ int duration[] = { VIERTEL, ACHTEL,  ACHTEL,  VIERTEL, VIERTEL, VIERTEL,    VIER
 #define SERVO_2_MAX 170  // maximale Position 0-180
 
 // Greifer-Winkel für Servo 1. Konservative Defaults bis zur EEPROM-Kalibrierung.
-// Der MG996R kann mechanisch weiter fahren als der Greifer — zu weite Winkel
+// Der MG996R kann mechanisch weiter fahren als der Greifer. Zu weite Winkel
 // führen zu Getriebe-Knirschen. Nach der Kalibrierung werden diese Werte durch
 // EEPROM-Werte ersetzt.
 
 // Gripper angles for servo 1. Conservative defaults until EEPROM calibration.
-// The MG996R can rotate further than the gripper allows — angles beyond the
+// The MG996R can rotate further than the gripper allows. Angles beyond the
 // mechanical limits cause gear grinding. These are replaced by EEPROM values
 // after calibration.
 #define GRIPPER_OPEN_ANGLE  45   // Greifer offen  / gripper open
@@ -343,9 +343,9 @@ int targetPositionServo2 = 0;
 
 // --- BEGIN INIT CALIBRATION ---
 
-// Greifer-Winkel zur Laufzeit — werden aus EEPROM geladen oder mit
+// Greifer-Winkel werden zur Laufzeit aus EEPROM geladen oder mit
 // GRIPPER_OPEN_ANGLE / GRIPPER_CLOSE_ANGLE initialisiert.
-// Gripper angles at runtime — loaded from EEPROM or initialised from defaults.
+// Gripper angles loaded from EEPROM at runtime or initialised from defaults.
 int nGripperOpenAngle  = GRIPPER_OPEN_ANGLE;
 int nGripperCloseAngle = GRIPPER_CLOSE_ANGLE;
 
@@ -836,7 +836,7 @@ void startServo1(int targetPos) {
  * Für kalibrierte Greifer-Winkel, die bereits physikalische Gradzahlen sind.
  *
  * Like startServo1() but without angle remapping. Use for calibrated physical angles
- * that must not be mapped a second time — otherwise the servo overshoots its limit.
+ * that must not be mapped a second time, otherwise the servo overshoots its limit.
  */
 void startServo1Raw(int physicalAngle) {
     targetPositionServo1 = physicalAngle;
@@ -1016,7 +1016,7 @@ void moveServoBackForth() {
 
 /**
  * Erkennt einen Button-Druck (Übergang zu LOW bei INPUT_PULLUP).
- * Gibt true zurück, wenn der Button gerade gedrückt wurde — nicht beim Loslassen.
+ * Gibt true zurück, wenn der Button gerade gedrückt wurde, nicht beim Loslassen.
  *
  * Detects a button press (transition to LOW with INPUT_PULLUP).
  * Returns true on press, not on release.
@@ -1118,8 +1118,8 @@ void enterCalibrationMode() {
     delay(60);
     TimerFreeTone(TONE_PIN, NOTE_G4, VIERTEL);
 
-    // Warten bis Button losgelassen — er war für den Trigger 5s gedrückt.
-    // Wait for button release — it was held down for the 5s trigger.
+    // Warten bis Button losgelassen, er war für den Trigger 5s gedrückt.
+    // Wait for button release, it was held down for the 5s trigger.
     while (digitalRead(JOYSTICK_SWITCH_PIN) == LOW) {
         delay(10);
     }
@@ -1999,7 +1999,7 @@ void avoidObstacles() {
         
         // Bilde die Entfernungen 15cm bis 150cm auf 
         // die Geschwindigkeiten 80 bis nMaxSpeed ab.
-		// map the distances 15cm to 150cm to the speeds 80 to nMaxSpeed
+        // map the distances 15cm to 150cm to the speeds 80 to nMaxSpeed
         nSpeed = min(map(nDistance, 15, 150, 80, nMaxSpeed), nMaxSpeed);
         startMotors(FORWARD, nSpeed, FORWARD, nSpeed);
     }
@@ -2017,7 +2017,7 @@ void avoidObstacles() {
         // Abstand in verschiedene Richtungen messen und in eine freie
         // Richtung drehen.
 
-		// find a free path
+        // find a free path
 		
         // links frei?
         // check left side
@@ -2197,10 +2197,17 @@ void manualControl() {
     		// on the range 0 to nMaxSteering.
         nJoyPosH = map(nJoyPosH, 0, JOY_MIDDLE_MIN, 0, nMaxSteering);
 
-        // Motorgeschwindigkeiten setzen
-        // set motor speed
-        nMotorSpeed1 = nMotorSpeed1 - nJoyPosH;
-        nMotorSpeed2 = nMotorSpeed2 + nJoyPosH;
+        // Motorgeschwindigkeiten setzen. Bei Rückwärtsfahrt Differenz umkehren,
+        // damit der Roboter in beiden Fahrtrichtungen korrekt lenkt.
+        // Set motor speeds. Invert differential when driving backward
+        // so the robot steers correctly in both directions.
+        if (nMotorDir == BACKWARD) {
+            nMotorSpeed1 = nMotorSpeed1 + nJoyPosH;
+            nMotorSpeed2 = nMotorSpeed2 - nJoyPosH;
+        } else {
+            nMotorSpeed1 = nMotorSpeed1 - nJoyPosH;
+            nMotorSpeed2 = nMotorSpeed2 + nJoyPosH;
+        }
 
         // Motorgeschwindigkeit im erlaubten Bereich halten
         // keep motor speed within the allowed limits
@@ -2224,10 +2231,17 @@ void manualControl() {
 
         nJoyPosH = map(nJoyPosH, JOY_MIDDLE_MAX, 1023, 0, nMaxSteering);
 
-        // Motorgeschwindigkeiten setzen
-        // set motor speed
-        nMotorSpeed1 = nMotorSpeed1 + nJoyPosH;
-        nMotorSpeed2 = nMotorSpeed2 - nJoyPosH;
+        // Motorgeschwindigkeiten setzen. Bei Rückwärtsfahrt Differenz umkehren,
+        // damit der Roboter in beiden Fahrtrichtungen korrekt lenkt.
+        // Set motor speeds. Invert differential when driving backward
+        // so the robot steers correctly in both directions.
+        if (nMotorDir == BACKWARD) {
+            nMotorSpeed1 = nMotorSpeed1 - nJoyPosH;
+            nMotorSpeed2 = nMotorSpeed2 + nJoyPosH;
+        } else {
+            nMotorSpeed1 = nMotorSpeed1 + nJoyPosH;
+            nMotorSpeed2 = nMotorSpeed2 - nJoyPosH;
+        }
 
         // Motorgeschwindigkeit im erlaubten Bereich halten
         // keep motor speed within the allowed limits
@@ -2273,7 +2287,15 @@ void manualControl() {
 
     // Motorgeschwindigkeiten setzen
     // set motor speed
-    startMotors(nMotorDir, nMotorSpeed1, nMotorDir, nMotorSpeed2);
+
+    // Im Stillstand (STOP) wird FORWARD als Richtung verwendet, damit die
+    // H-Brücken-Pins nicht im Zustand der letzten Fahrtrichtung verbleiben.
+    // Dies verhindert invertiertes Lenken auf der Stelle nach Rückwärtsfahrt.
+    // When stopped, use FORWARD as direction so the H-bridge pins are not left
+    // in the state of the previous driving direction. This prevents inverted
+    // in-place steering after driving backward.
+    int nEffectiveDir = (nMotorDir == STOP) ? FORWARD : nMotorDir;
+    startMotors(nEffectiveDir, nMotorSpeed1, nEffectiveDir, nMotorSpeed2);
 
 }
 
